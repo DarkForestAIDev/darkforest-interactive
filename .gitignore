@@ -22,6 +22,9 @@ Thumbs.db
 *.log
 *.db
 *.sqlite3
+transmissions.json
+static/transmissions.json
+static/chapter_*.json
 
 # Image files
 images/
