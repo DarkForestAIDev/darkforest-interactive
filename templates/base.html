@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dark Forest Interactive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-container">
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='images/Logo RemoveBG.png') }}" alt="Dark Forest Interactive Logo" class="logo">
+                </div>
+                <h1>DARK FOREST INTERACTIVE</h1>
+            </div>
+            {% if test_mode %}
+            <div class="test-mode-banner">
+                <span class="test-label">TEST MODE ACTIVE</span>
+                <p class="test-description">System is running in test mode. All transmissions are simulated.</p>
+            </div>
+            {% endif %}
+            <div class="social-links">
+                {% if request.endpoint == 'about' %}
+                <a href="{{ config['DFI_TWITTER_URL'] }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-twitter"></i>
+                </a>
+                {% elif request.endpoint == 'chapter_two' %}
+                <a href="#" class="social-link disabled">
+                    <i class="fab fa-twitter"></i>
+                </a>
+                {% else %}
+                <a href="{{ config['STARWEAVER_TWITTER_URL'] }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-twitter"></i>
+                </a>
+                {% endif %}
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-telegram"></i>
+                </a>
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-chart-line"></i>
+                </a>
+            </div>
+            <nav class="main-nav">
+                <a href="/">CHAPTER ONE</a>
+                <a href="/chapter-two">CHAPTER TWO</a>
+                <a href="/transmissions">LIVE TRANSMISSIONS</a>
+                <a href="/about">ABOUT</a>
+            </nav>
+        </header>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Dark Forest Interactive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-container">
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='images/Logo RemoveBG.png') }}" alt="Dark Forest Interactive Logo" class="logo">
+                </div>
+                <h1>DARK FOREST INTERACTIVE</h1>
+            </div>
+            {% if test_mode %}
+            <div class="test-mode-banner">
+                <span class="test-label">TEST MODE ACTIVE</span>
+                <p class="test-description">System is running in test mode. All transmissions are simulated.</p>
+            </div>
+            {% endif %}
+            <div class="social-links">
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-twitter"></i>
+                </a>
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-telegram"></i>
+                </a>
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-chart-line"></i>
+                </a>
+            </div>
+            <nav class="main-nav">
+                <a href="/">CHAPTER ONE</a>
+                <a href="/chapter-two">CHAPTER TWO</a>
+                <a href="/transmissions">LIVE TRANSMISSIONS</a>
+                <a href="/about" class="active">ABOUT</a>
+            </nav>
+        </header>
+
+        <main class="about-content">
+            <section class="about-section">
+                <h2>About Dark Forest Interactive</h2>
+                <p>Dark Forest Interactive is an experimental project that showcases the creative potential of artificial intelligence in storytelling. This entire experience, from the story to the visuals and voices, has been created using various AI technologies working together.</p>
+
+                <h3>AI Technologies Used</h3>
+                <ul>
+                    <li>ChatGPT: Creates all story content, character interactions, and transmissions</li>
+                    <li>ElevenLabs: Generates the realistic voice transmissions you hear</li>
+                    <li>Midjourney & Runway: Creates all the visual elements and artwork</li>
+                </ul>
+
+                <h3>Project Features</h3>
+                <ul>
+                    <li>Immersive Storytelling: A deep space narrative that evolves through AI-generated transmissions every 20 minutes</li>
+                    <li>Voice Synthesis: Realistic AI-generated character voices</li>
+                    <li>Dynamic Content: Story adapts and changes based on various factors</li>
+                    <li>Social Integration: Automated updates across platforms</li>
+                </ul>
+
+                <h3>How It Works</h3>
+                <ul>
+                    <li>New transmissions are generated every 20 minutes</li>
+                    <li>Each transmission is uniquely created by AI</li>
+                    <li>Voice synthesis converts text to realistic speech</li>
+                    <li>Story evolves based on internal narrative logic</li>
+                </ul>
+
+                <h3>System Note</h3>
+                <p>This is an experimental project that demonstrates how multiple AI systems can work together to create an engaging narrative experience. All transmissions, voices, and visuals are AI-generated to simulate deep space communications.</p>
+
+                <h3>Contact Information</h3>
+                <p>For more information about this AI experiment, connect with us through our social media channels above.</p>
+            </section>
+        </main>
+    </div>
+</body>
+</html> 

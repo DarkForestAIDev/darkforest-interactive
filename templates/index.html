@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alien Transmission Feed</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ENTITY Ξ-935 [DESIGNATION: STARWEAVER]</h1>
+            <p class="subtitle">TRANSMISSION FEED // PROXIMA-7 SYSTEM</p>
+        </header>
+
+        <div class="transmission-feed">
+            {% for transmission in transmissions %}
+            <div class="transmission">
+                <div class="transmission-header">
+                    <span class="time-code">{{ transmission.time_code }}</span>
+                    <span class="status {{ transmission.status.lower() }}">{{ transmission.status }}</span>
+                    <div class="signal-strength">
+                        <span class="signal-label">SIGNAL</span>
+                        <div class="signal-bar" style="--strength: {{ transmission.signal_strength }}%"></div>
+                        <span class="signal-value">{{ transmission.signal_strength }}%</span>
+                    </div>
+                </div>
+                <div class="message">{{ transmission.message }}</div>
+                <div class="timestamp">{{ transmission.timestamp }}</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="next-transmission">
+            <div class="countdown">
+                <span>NEXT TRANSMISSION IN</span>
+                <span class="time" id="countdown">{{ next_update }}</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Countdown timer
+        function updateCountdown() {
+            let countdown = document.getElementById('countdown');
+            let seconds = parseInt(countdown.textContent);
+            
+            setInterval(() => {
+                seconds = seconds > 0 ? seconds - 1 : 3600;
+                let minutes = Math.floor(seconds / 60);
+                let remainingSeconds = seconds % 60;
+                countdown.textContent = `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Start the countdown when the page loads
+        window.onload = updateCountdown;
+    </script>
+</body>
+</html> 

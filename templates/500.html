@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - Server Error</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="noise-overlay"></div>
+    
+    <main>
+        <div class="content">
+            <h1>500</h1>
+            <div class="about">
+                <p>A cosmic disturbance has occurred...</p>
+                <p><a href="{{ url_for('home') }}" class="back-link">Try again</a></p>
+            </div>
+        </div>
+    </main>
+</body>
+</html> 

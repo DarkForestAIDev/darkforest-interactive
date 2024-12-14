@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Transmissions - Dark Forest Interactive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-container">
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='images/Logo RemoveBG.png') }}" alt="Dark Forest Interactive Logo" class="logo">
+                </div>
+                <h1>DARK FOREST INTERACTIVE</h1>
+            </div>
+            <div class="social-links">
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-twitter"></i>
+                </a>
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-telegram"></i>
+                </a>
+                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fas fa-chart-line"></i>
+                </a>
+            </div>
+            <nav class="main-nav">
+                <a href="/">CHAPTER ONE</a>
+                <a href="/chapter-two">CHAPTER TWO</a>
+                <a href="/transmissions" class="active">LIVE TRANSMISSIONS</a>
+                <a href="/about">ABOUT</a>
+            </nav>
+        </header>
+
+        {% if transmissions %}
+        <!-- Next Transmission Countdown -->
+        <div class="next-transmission">
+            <div class="countdown">
+                <span>NEXT TRANSMISSION IN</span>
+                <span class="time" id="countdown">{{ next_update }}</span>
+            </div>
+        </div>
+
+        <!-- Most Recent Transmission -->
+        <div class="latest-transmission">
+            <h2>NEWEST TRANSMISSION</h2>
+            <div class="transmission latest">
+                <div class="transmission-header">
+                    <span class="status latest">{{ transmissions[0].status }}</span>
+                    <div class="signal-strength">
+                        <span class="signal-label">SIGNAL</span>
+                        <div class="signal-bar" style="--strength: {{ transmissions[0].signal_strength }}%"></div>
+                        <span class="signal-value">{{ transmissions[0].signal_strength }}%</span>
+                    </div>
+                    <button class="play-audio" onclick="playTransmission('{{ transmissions[0].id }}')">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+                <div class="message">{{ transmissions[0].message }}</div>
+                <div class="timestamp">{{ transmissions[0].timestamp }}</div>
+                <audio id="audio-{{ transmissions[0].id }}" style="display: none;">
+                    <source src="{{ url_for('get_transmission_audio', transmission_id=transmissions[0].id) }}" type="audio/mpeg">
+                </audio>
+            </div>
+        </div>
+
+        <!-- Archive Separator -->
+        <div class="archive-separator">
+            <h3>TRANSMISSION ARCHIVE</h3>
+            <div class="separator-line"></div>
+        </div>
+
+        <!-- Past Transmissions -->
+        <div class="transmission-feed">
+            {% for transmission in transmissions[1:] %}
+            <div class="transmission">
+                <div class="transmission-header">
+                    <span class="status">{{ transmission.status }}</span>
+                    <div class="signal-strength">
+                        <span class="signal-label">SIGNAL</span>
+                        <div class="signal-bar" style="--strength: {{ transmission.signal_strength }}%"></div>
+                        <span class="signal-value">{{ transmission.signal_strength }}%</span>
+                    </div>
+                    <button class="play-audio" onclick="playTransmission('{{ transmission.id }}')">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+                <div class="message">{{ transmission.message }}</div>
+                <div class="timestamp">{{ transmission.timestamp }}</div>
+                <audio id="audio-{{ transmission.id }}" style="display: none;">
+                    <source src="{{ url_for('get_transmission_audio', transmission_id=transmission.id) }}" type="audio/mpeg">
+                </audio>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <script>
+            // Countdown timer
+            function updateCountdown() {
+                let countdown = document.getElementById('countdown');
+                let timeString = countdown.textContent;
+                let [minutes, seconds] = timeString.split(':').map(num => parseInt(num));
+                let totalSeconds = minutes * 60 + seconds;
+                
+                function formatTime(totalSeconds) {
+                    let minutes = Math.floor(totalSeconds / 60);
+                    let seconds = totalSeconds % 60;
+                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+                
+                setInterval(() => {
+                    totalSeconds = totalSeconds > 0 ? totalSeconds - 1 : 1200; // 20 minutes = 1200 seconds
+                    countdown.textContent = formatTime(totalSeconds);
+                }, 1000);
+            }
+
+            // Audio playback handling
+            let currentlyPlaying = null;
+
+            function playTransmission(transmissionId) {
+                const audio = document.getElementById(`audio-${transmissionId}`);
+                const button = document.querySelector(`button[onclick="playTransmission('${transmissionId}')"]`);
+                
+                if (currentlyPlaying && currentlyPlaying !== audio) {
+                    currentlyPlaying.pause();
+                    currentlyPlaying.currentTime = 0;
+                    const oldButton = document.querySelector(`button[onclick="playTransmission('${currentlyPlaying.id.replace('audio-', '')}')"]`);
+                    oldButton.classList.remove('playing');
+                    oldButton.querySelector('i').classList.add('fa-play');
+                    oldButton.querySelector('i').classList.remove('fa-pause');
+                }
+
+                if (audio.paused) {
+                    audio.play().catch(function(error) {
+                        console.log("Audio playback error:", error);
+                    });
+                    button.classList.add('playing');
+                    button.querySelector('i').classList.add('fa-pause');
+                    button.querySelector('i').classList.remove('fa-play');
+                    currentlyPlaying = audio;
+                } else {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    button.classList.remove('playing');
+                    button.querySelector('i').classList.add('fa-play');
+                    button.querySelector('i').classList.remove('fa-pause');
+                    currentlyPlaying = null;
+                }
+
+                audio.onended = function() {
+                    button.classList.remove('playing');
+                    button.querySelector('i').classList.add('fa-play');
+                    button.querySelector('i').classList.remove('fa-pause');
+                    currentlyPlaying = null;
+                };
+            }
+
+            // Auto-refresh the page when new transmission should be available
+            function setupAutoRefresh() {
+                setInterval(() => {
+                    location.reload();
+                }, 20000); // Refresh every 20 seconds
+            }
+
+            // Start the countdown and auto-refresh when the page loads
+            window.onload = function() {
+                updateCountdown();
+                setupAutoRefresh();
+            };
+        </script>
+    </div>
+</body>
+</html> 
