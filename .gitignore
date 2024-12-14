@@ -21,4 +21,8 @@ Thumbs.db
 # Generated files
 *.log
 *.db
-*.sqlite3 
+*.sqlite3
+
+# Image files
+images/
+static/images/
