@@ -10,4 +10,32 @@ services:
       - key: FLASK_APP
         value: app.py
       - key: FLASK_ENV
-        value: production 
+        value: production
+      - key: SECRET_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: STARWEAVER_CONSUMER_KEY
+        sync: false
+      - key: STARWEAVER_CONSUMER_SECRET
+        sync: false
+      - key: STARWEAVER_ACCESS_TOKEN
+        sync: false
+      - key: STARWEAVER_ACCESS_TOKEN_SECRET
+        sync: false
+      - key: STARWEAVER_BEARER_TOKEN
+        sync: false
+      - key: DARKFOREST_CONSUMER_KEY
+        sync: false
+      - key: DARKFOREST_CONSUMER_SECRET
+        sync: false
+      - key: DARKFOREST_ACCESS_TOKEN
+        sync: false
+      - key: DARKFOREST_ACCESS_TOKEN_SECRET
+        sync: false
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
