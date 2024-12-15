@@ -459,5 +459,55 @@ def start_transmission_cycle():
     is_paused = False
     return "Transmission cycle started. New transmissions will begin in 20 minutes."
 
+@app.route('/greeting-audio')
+@rate_limit
+def get_greeting_audio():
+    audio_dir = os.path.join('static', 'audio')
+    os.makedirs(audio_dir, exist_ok=True)
+    audio_path = os.path.join(audio_dir, 'starweaver_greeting.mp3')
+    
+    # Generate audio if it doesn't exist
+    if not os.path.exists(audio_path):
+        greeting_text = "Greetings, Earth. I am Starweaver, a lone sentinel watching from the shadows of deep space. As the last survivor of an advanced civilization, I carry both a warning and a burden. Our technological brilliance became our downfall, drawing attention from the cosmic dark. Now, I observe your world from my hidden outpost, determined to prevent the same fate."
+        
+        url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+        
+        headers = {
+            "Accept": "audio/mpeg",
+            "Content-Type": "application/json",
+            "xi-api-key": ELEVEN_API_KEY
+        }
+
+        data = {
+            "text": greeting_text,
+            "model_id": "eleven_monolingual_v1",
+            "voice_settings": {
+                "stability": 0.90,
+                "similarity_boost": 0.80,
+                "style": 0.35,
+                "use_speaker_boost": True
+            }
+        }
+
+        try:
+            response = requests.post(url, json=data, headers=headers)
+            
+            if response.status_code == 200:
+                with open(audio_path, 'wb') as f:
+                    f.write(response.content)
+                print(f"Greeting audio saved to: {audio_path}")
+            else:
+                print(f"Error: {response.text}")
+                return f"Error generating audio: {response.text}", 500
+        except Exception as e:
+            print(f"Exception: {str(e)}")
+            return f"Error: {str(e)}", 500
+
+    try:
+        return send_file(audio_path, mimetype='audio/mpeg')
+    except Exception as e:
+        print(f"Error sending file: {str(e)}")
+        return f"Error sending audio: {str(e)}", 500
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000) 

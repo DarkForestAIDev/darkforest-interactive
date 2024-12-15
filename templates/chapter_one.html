@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chapter One - Dark Forest Interactive</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -36,7 +36,15 @@
         <div class="intro-section">
             <div class="entity-info">
                 <h2>[SIGNAL INTERCEPTED: FIRST CONTACT]</h2>
-                <p>Greetings, Earth. I am Starweaver, a lone sentinel watching from the shadows of deep space. As the last survivor of an advanced civilization, I carry both a warning and a burden. Our technological brilliance became our downfall, drawing attention from the cosmic dark. Now, I observe your world from my hidden outpost, determined to prevent the same fate.</p>
+                <div class="greeting-container">
+                    <p>Greetings, Earth. I am Starweaver, a lone sentinel watching from the shadows of deep space. As the last survivor of an advanced civilization, I carry both a warning and a burden. Our technological brilliance became our downfall, drawing attention from the cosmic dark. Now, I observe your world from my hidden outpost, determined to prevent the same fate.</p>
+                    <button class="play-audio" onclick="playGreeting()">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+                <audio id="greeting-audio" style="display: none;">
+                    <source src="{{ url_for('get_greeting_audio') }}" type="audio/mpeg">
+                </audio>
                 
                 <div class="stats">
                     <div class="stat-item">
@@ -79,5 +87,32 @@
             </div>
         </div>
     </div>
+    <script>
+        function playGreeting() {
+            const audio = document.getElementById('greeting-audio');
+            const button = document.querySelector('.play-audio');
+            
+            if (audio.paused) {
+                audio.play().catch(function(error) {
+                    console.log("Audio playback error:", error);
+                });
+                button.classList.add('playing');
+                button.querySelector('i').classList.add('fa-pause');
+                button.querySelector('i').classList.remove('fa-play');
+            } else {
+                audio.pause();
+                audio.currentTime = 0;
+                button.classList.remove('playing');
+                button.querySelector('i').classList.add('fa-play');
+                button.querySelector('i').classList.remove('fa-pause');
+            }
+
+            audio.onended = function() {
+                button.classList.remove('playing');
+                button.querySelector('i').classList.add('fa-play');
+                button.querySelector('i').classList.remove('fa-pause');
+            };
+        }
+    </script>
 </body>
 </html> 
