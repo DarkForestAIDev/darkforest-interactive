@@ -7,10 +7,6 @@ from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-client = OpenAI(
-    api_key=os.getenv('OPENAI_API_KEY'),
-    default_headers={"User-Agent": "Starweaver"}
-)
 
 class TransmissionGenerator:
     def __init__(self):
@@ -99,6 +95,9 @@ class TransmissionGenerator:
         }
 
     def _generate_next_transmission(self):
+        # Initialize OpenAI client
+        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+        
         # Select random elements for prompt construction
         trait = random.choice(self.personality_traits)
         operation = random.choice(self.ship_operations)
