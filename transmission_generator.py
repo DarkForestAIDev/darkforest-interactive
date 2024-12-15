@@ -1,12 +1,16 @@
 from datetime import datetime, timedelta
 import random
 import json
-from openai import OpenAI
 import os
 from dotenv import load_dotenv
+import openai
+from functools import partial
 
 # Load environment variables
 load_dotenv()
+
+# Configure OpenAI
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 class TransmissionGenerator:
     def __init__(self):
@@ -95,9 +99,6 @@ class TransmissionGenerator:
         }
 
     def _generate_next_transmission(self):
-        # Initialize OpenAI client
-        client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-        
         # Select random elements for prompt construction
         trait = random.choice(self.personality_traits)
         operation = random.choice(self.ship_operations)
@@ -144,7 +145,7 @@ class TransmissionGenerator:
             Mix technical observations with emotional reflections.
             """
 
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4-1106-preview",
             messages=[
                 {"role": "system", "content": "Write natural thoughts that complete within 275 characters."},
