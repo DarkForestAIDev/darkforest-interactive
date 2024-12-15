@@ -187,7 +187,7 @@ def load_transmissions():
     try:
         with open('static/transmissions.json', 'r') as f:
             return json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
         initial_transmission = {
             'id': 'transmission-001',
             'message': 'Hello... This is Starweaver. Can anyone hear me? I am transmitting from the void between stars...',
@@ -196,8 +196,11 @@ def load_transmissions():
             'status': 'TRANSMISSION #1',
             'time_code': 'T-00:00:00'
         }
-        # Don't save or post yet, just return empty list
-        return []
+        # Save the initial transmission
+        os.makedirs('static', exist_ok=True)
+        with open('static/transmissions.json', 'w') as f:
+            json.dump([initial_transmission], f, indent=2)
+        return [initial_transmission]  # Return the initial transmission instead of empty list
 
 def save_transmissions(transmissions_data):
     os.makedirs('static', exist_ok=True)
@@ -370,20 +373,32 @@ def handle_command(action):
     global transmissions
     
     if action == "start_chapter_one":
-        # Start fresh with Chapter One
-        transmissions = [{
-            'id': 'transmission-001',
-            'message': 'Hello... This is Starweaver. Can anyone hear me? I am transmitting from the void between stars...',
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'signal_strength': 85,
-            'status': 'TRANSMISSION #1',
-            'time_code': 'T-00:00:00'
-        }]
-        save_transmissions(transmissions)
-        generator.transmission_count = 1
-        generator.resume_transmissions()
-        return {"status": "success", "message": "Chapter One started"}
-        
+        try:
+            # Start fresh with Chapter One
+            initial_transmission = {
+                'id': 'transmission-001',
+                'message': 'Hello... This is Starweaver. Can anyone hear me? I am transmitting from the void between stars...',
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'signal_strength': 85,
+                'status': 'TRANSMISSION #1',
+                'time_code': 'T-00:00:00'
+            }
+            
+            # Save to file
+            os.makedirs('static', exist_ok=True)
+            with open('static/transmissions.json', 'w') as f:
+                json.dump([initial_transmission], f, indent=2)
+            
+            # Update global transmissions
+            transmissions = [initial_transmission]
+            last_transmission_time = datetime.now()
+            
+            logger.info("First transmission created successfully")
+            return {"status": "success", "message": "First transmission posted"}
+        except Exception as e:
+            logger.error(f"Error posting first transmission: {str(e)}")
+            return {"status": "error", "message": str(e)}
+            
     elif action == "start_chapter_two":
         # Archive current transmissions as Chapter One
         if os.path.exists('static/transmissions.json'):
