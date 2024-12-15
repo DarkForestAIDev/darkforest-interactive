@@ -32,8 +32,10 @@ This project showcases the integration of multiple AI systems:
 
 ## Project Status
 
-Currently in active development. Follow our social media for updates:
-- Twitter: [@ProjectStarweaver](https://twitter.com/ProjectStarweaver)
+Currently in active development. Follow us here:
+- 🌐 Website: [darkforestinteractive.com](https://darkforestinteractive.com)
+- 🤖 Starweaver: [@Starweaver_AI](https://twitter.com/Starweaver_AI)
+- 🎮 Dark Forest Interactive: [@DFI_AI](https://twitter.com/DFI_AI)
 
 ## Privacy Notice
 
