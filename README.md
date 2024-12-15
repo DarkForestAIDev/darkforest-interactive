@@ -4,7 +4,7 @@ An experimental AI-driven interactive storytelling experience based on Liu Cixin
 
 ## About the Project
 
-Dark Forest Interactive is a groundbreaking experiment in AI-powered storytelling. Through a series of real-time transmissions, it tells the story of Starweaver, an artificial consciousness hiding in the depths of space.
+Dark Forest Interactive is a groundbreaking experiment in AI-powered storytelling. Through a series of real-time transmissions, it explores the mysteries of cosmic silence and the nature of intelligence in our universe.
 
 ### The Dark Forest Theory
 
@@ -33,9 +33,20 @@ This project showcases the integration of multiple AI systems:
 ## Project Status
 
 Currently in active development. Follow our social media for updates:
-- Twitter: [@Starweaver_AI](https://twitter.com/Starweaver_AI)
-- Project Updates: [@DFI_AI](https://twitter.com/DFI_AI)
+- Twitter: [@ProjectStarweaver](https://twitter.com/ProjectStarweaver)
+
+## Privacy Notice
+
+This is a public repository showcasing the technical framework of the project. For the integrity of the experience, all story content and specific narrative elements are kept private.
 
 ## Contact
 
 For inquiries about this AI experiment, reach out through our social media channels.
+
+## License
+
+This project's public components are licensed under the MIT License. Story content and implementation details are proprietary.
+
+---
+
+*"In the dark forest of the cosmos, every civilization is an armed hunter stalking through the trees like a ghost..."*

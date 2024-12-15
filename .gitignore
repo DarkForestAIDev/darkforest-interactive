@@ -26,6 +26,18 @@ transmissions.json
 static/transmissions.json
 static/chapter_*.json
 
+# Story files
+story_config.py
+prompt_guide.md
+chapter_guide.md
+project_development_log.md
+story_control.ps1
+transmission_generator.py
+
 # Image files
 images/
 static/images/
+
+# Scripts and local config
+run_website.bat
+Procfile

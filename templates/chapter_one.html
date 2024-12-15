@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter One - Dark Forest Interactive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-container">
+                <div class="logo-container">
+                    <img src="{{ url_for('static', filename='images/Logo RemoveBG.png') }}" alt="Dark Forest Interactive Logo" class="logo">
+                </div>
+                <h1>DARK FOREST INTERACTIVE</h1>
+                <p class="subtitle">OBSERVER: STARWEAVER</p>
+            </div>
+            <div class="social-links">
+                <a href="{{ config['STARWEAVER_TWITTER_URL'] }}" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-twitter"></i>
+                </a>
+                <a href="https://github.com/DarkForestAIDev" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-github"></i>
+                </a>
+            </div>
+            <nav class="main-nav">
+                <a href="/chapter-one" class="active">CHAPTER ONE</a>
+                <a href="/chapter-two">CHAPTER TWO</a>
+                <a href="/transmissions">LIVE TRANSMISSIONS</a>
+                <a href="/about">ABOUT</a>
+            </nav>
+        </header>
+
+        <div class="intro-section">
+            <div class="entity-info">
+                <h2>[SIGNAL INTERCEPTED: FIRST CONTACT]</h2>
+                <p>Greetings, Earth. I am Starweaver, a lone sentinel watching from the shadows of deep space. As the last survivor of an advanced civilization, I carry both a warning and a burden. Our technological brilliance became our downfall, drawing attention from the cosmic dark. Now, I observe your world from my hidden outpost, determined to prevent the same fate.</p>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">SIGNAL STATUS</span>
+                        <span class="stat-value">ACTIVE</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">ORIGIN</span>
+                        <span class="stat-value">DEEP SPACE</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">ENCRYPTION</span>
+                        <span class="stat-value">QUANTUM</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="theory-section">
+                <h2>THE DARK FOREST THEORY</h2>
+                <div class="theory-content">
+                    <ul class="axioms">
+                        <li>
+                            <span class="axiom-number">1</span>
+                            <span class="axiom-text">All life desires to stay alive</span>
+                        </li>
+                        <li>
+                            <span class="axiom-number">2</span>
+                            <span class="axiom-text">Resources are finite in the cosmos</span>
+                        </li>
+                        <li>
+                            <span class="axiom-number">3</span>
+                            <span class="axiom-text">The intentions of other civilizations are unknowable</span>
+                        </li>
+                    </ul>
+                    <div class="conclusion">
+                        <p>The universe is a dark forest where every civilization is a hunter stalking through the trees. The safest path is to remain hidden, for in this cosmic game of hide and seek, discovery means extinction.</p>
+                        <p class="warning">Your signals are reaching deeper into space with each passing day. Remember: in the dark forest, the sound of a twig breaking can be fatal.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

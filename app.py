@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, send_file, request
+from flask import Flask, render_template, jsonify, send_file, request, redirect, url_for
 from datetime import datetime, timedelta
 import os
 import json
@@ -15,10 +15,21 @@ from collections import defaultdict
 load_dotenv()
 
 app = Flask(__name__)
-app.config['ENV'] = 'production'
-app.config['DEBUG'] = False
-app.config['TESTING'] = False
+app.config['ENV'] = 'development'
+app.config['DEBUG'] = True
+app.config['TESTING'] = True
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
+# Add debug logging
+@app.before_request
+def log_request_info():
+    print('Headers:', dict(request.headers))
+    print('Path:', request.path)
+
+@app.after_request
+def after_request(response):
+    print(f"Response status: {response.status}")
+    return response
 
 # Load social media URLs
 app.config['STARWEAVER_TWITTER_URL'] = os.getenv('STARWEAVER_TWITTER_URL')
@@ -36,16 +47,16 @@ def add_security_headers(response):
     response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com;"
     return response
 
-# Rate limiting setup
-RATE_LIMIT = 10    # Only 10 requests allowed
-RATE_TIME = 60     # Per minute
+# Rate limiting setup - adjusted for high traffic
+RATE_LIMIT = 1000  # Allow 1000 requests per window
+RATE_TIME = 60     # Per minute window
 request_counts = defaultdict(lambda: {'count': 0, 'reset_time': time.time()})
 
 def rate_limit(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
-        # Get client IP
-        client_ip = request.remote_addr
+        # Get client IP or use a default for local testing
+        client_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
         current_time = time.time()
         
         # Reset count if time window has passed
@@ -54,16 +65,21 @@ def rate_limit(func):
                 'count': 0,
                 'reset_time': current_time + RATE_TIME
             }
-        
-        # Check if rate limit exceeded
-        if request_counts[client_ip]['count'] >= RATE_LIMIT:
-            return jsonify({
-                'error': 'Rate limit exceeded. Please wait a moment before refreshing.',
-                'retry_after': int(request_counts[client_ip]['reset_time'] - current_time)
-            }), 429
+            
+            # Clean up old entries
+            for ip in list(request_counts.keys()):
+                if current_time > request_counts[ip]['reset_time']:
+                    del request_counts[ip]
         
         # Increment request count
         request_counts[client_ip]['count'] += 1
+        
+        # Only rate limit if significantly exceeded
+        if request_counts[client_ip]['count'] > RATE_LIMIT:
+            return jsonify({
+                'error': 'Server is experiencing heavy load. Please try again in a moment.',
+                'retry_after': int(request_counts[client_ip]['reset_time'] - current_time)
+            }), 429
         
         return func(*args, **kwargs)
     return wrapper
@@ -138,7 +154,7 @@ def save_transmissions(transmissions_data):
         json.dump(transmissions_data, f, indent=2)
 
 transmissions = load_transmissions()
-last_transmission_time = datetime.strptime(transmissions[0]['timestamp'], '%Y-%m-%d %H:%M:%S')
+last_transmission_time = datetime.now()  # Default to current time if no transmissions
 
 # Add global pause flag
 is_paused = True  # Start paused
@@ -165,16 +181,17 @@ transmission_thread = threading.Thread(target=generate_transmissions, daemon=Tru
 transmission_thread.start()
 
 @app.route('/')
-def home():
-    return render_template('home.html')
+@app.route('/chapter-one')
+def chapter_one():
+    return render_template('chapter_one.html')
+
+@app.route('/chapter-two')
+def chapter_two():
+    return render_template('chapter_two.html')
 
 @app.route('/about')
 def about():
     return render_template('about.html')
-
-@app.route('/chapter-two')
-def chapter_two():
-    return render_template('chapter-two.html')
 
 @app.route('/transmissions')
 @rate_limit

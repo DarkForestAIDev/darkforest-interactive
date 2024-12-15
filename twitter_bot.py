@@ -41,10 +41,19 @@ class TwitterBot:
                     print(f"DFI retweet failed: {str(e)}")
             
             # For community engagement transmissions, DFI adds a reply encouraging interaction
-            if transmission_number in [3, 6, 10, 14, 18]:
+            if transmission_number in [3, 6, 10, 14, 19, 22]:
                 try:
+                    engagement_prompts = [
+                        "What theories do you have about Starweaver's message? 🤔",
+                        "What do you think this means for Earth's safety? 🌍",
+                        "Share your thoughts on this transmission... 💭",
+                        "What would you do in Starweaver's position? 🚀",
+                        "The implications of this are fascinating. Your thoughts? 🌌",
+                        "How do you think this story will unfold? 🌠"
+                    ]
+                    prompt = engagement_prompts[transmission_number % len(engagement_prompts)]
                     self.dfi.create_tweet(
-                        text="What do you think about Starweaver's message? Share your thoughts and theories! 🤔",
+                        text=prompt,
                         in_reply_to_tweet_id=tweet_id
                     )
                     print(f"DFI added engagement prompt to transmission #{transmission_number}")
