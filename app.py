@@ -6,29 +6,44 @@ import requests
 import threading
 import time
 import tweepy
+import logging
 from transmission_generator import TransmissionGenerator
 from dotenv import load_dotenv
 from functools import wraps
 from collections import defaultdict
 
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 # Load environment variables
 load_dotenv()
+logger.info("Environment variables loaded")
 
 app = Flask(__name__)
-app.config['ENV'] = 'development'
-app.config['DEBUG'] = True
-app.config['TESTING'] = True
+logger.info("Flask app created")
+
+app.config['ENV'] = os.getenv('FLASK_ENV', 'production')
+app.config['DEBUG'] = False
+app.config['TESTING'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
+logger.info(f"App configuration set: ENV={app.config['ENV']}")
+
+# Create static directory if it doesn't exist
+os.makedirs('static', exist_ok=True)
+os.makedirs('static/audio', exist_ok=True)
+logger.info("Static directories created")
 
 # Add debug logging
 @app.before_request
 def log_request_info():
-    print('Headers:', dict(request.headers))
-    print('Path:', request.path)
+    logger.info('Headers: %s', dict(request.headers))
+    logger.info('Path: %s', request.path)
 
 @app.after_request
 def after_request(response):
-    print(f"Response status: {response.status}")
+    logger.info(f"Response status: {response.status}")
     return response
 
 # Load social media URLs
@@ -383,12 +398,9 @@ def save_and_post_transmission(transmission):
         with open('static/transmissions.json', 'w') as f:
             json.dump(transmissions, f, indent=2)
         
-        # Post to Twitter based on transmission type
+        # Post to Twitter using the TwitterBot
         twitter_bot = TwitterBot()
-        if 'URGENT' in transmission['status'] or 'CRITICAL' in transmission['status']:
-            twitter_bot.post_special_transmission(transmission)
-        else:
-            twitter_bot.post_transmission(transmission)
+        twitter_bot.post_transmission(transmission)
             
         print(f"New transmission generated at {datetime.now()}")
         
@@ -510,4 +522,5 @@ def get_greeting_audio():
         return f"Error sending audio: {str(e)}", 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000) 
+    logger.info("Starting the application")
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000))) 
