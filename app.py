@@ -198,7 +198,12 @@ transmission_thread.start()
 @app.route('/')
 @app.route('/chapter-one')
 def chapter_one():
-    return render_template('chapter_one.html')
+    try:
+        logger.info("Attempting to render chapter_one.html")
+        return render_template('chapter_one.html')
+    except Exception as e:
+        logger.error(f"Error rendering chapter_one: {str(e)}")
+        return f"Error: {str(e)}", 500
 
 @app.route('/chapter-two')
 def chapter_two():
@@ -206,25 +211,35 @@ def chapter_two():
 
 @app.route('/about')
 def about():
-    return render_template('about.html')
+    try:
+        logger.info("Attempting to render about.html")
+        return render_template('about.html')
+    except Exception as e:
+        logger.error(f"Error rendering about: {str(e)}")
+        return f"Error: {str(e)}", 500
 
 @app.route('/transmissions')
 @rate_limit
 def transmissions_page():
-    # Calculate time until next transmission
-    time_since_last = datetime.now() - last_transmission_time
-    time_remaining = timedelta(minutes=20) - time_since_last
-    seconds_remaining = max(0, int(time_remaining.total_seconds()))
-    
-    # Format initial countdown
-    minutes = seconds_remaining // 60
-    seconds = seconds_remaining % 60
-    formatted_time = f"{minutes}:{str(seconds).zfill(2)}"
-    
-    return render_template('transmissions.html', 
-                         transmissions=transmissions,
-                         next_update=formatted_time,
-                         test_mode=True)
+    try:
+        logger.info("Attempting to render transmissions page")
+        # Calculate time until next transmission
+        time_since_last = datetime.now() - last_transmission_time
+        time_remaining = timedelta(minutes=20) - time_since_last
+        seconds_remaining = max(0, int(time_remaining.total_seconds()))
+        
+        # Format initial countdown
+        minutes = seconds_remaining // 60
+        seconds = seconds_remaining % 60
+        formatted_time = f"{minutes}:{str(seconds).zfill(2)}"
+        
+        logger.info(f"Current transmissions: {transmissions}")
+        return render_template('transmissions.html', 
+                             transmissions=transmissions,
+                             next_update=formatted_time)
+    except Exception as e:
+        logger.error(f"Error rendering transmissions: {str(e)}")
+        return f"Error: {str(e)}", 500
 
 @app.route('/transmission-audio/<transmission_id>')
 @rate_limit
