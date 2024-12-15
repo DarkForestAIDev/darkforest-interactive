@@ -1,13 +1,16 @@
 from datetime import datetime, timedelta
 import random
 import json
-import openai
+from openai import OpenAI
 import os
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv()
-client = openai.OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = OpenAI(
+    api_key=os.getenv('OPENAI_API_KEY'),
+    default_headers={"User-Agent": "Starweaver"}
+)
 
 class TransmissionGenerator:
     def __init__(self):
@@ -107,13 +110,28 @@ class TransmissionGenerator:
             You are Starweaver, a female AI hiding in your cloaked ship.
             Your current state: {trait}, {emotion}
             Current operation: {operation}
+            Transmission number: {self.transmission_count}
             
-            Write something that subtly:
+            Write something that:
+            - References your previous observations or decisions
+            - Hints at choices or dilemmas you're facing
+            - Shows your growing concern for Earth's safety
+            - Suggests you might need guidance or input
+            - Makes humans feel involved in your mission
             - Raises questions about your mission or observations
             - Hints at deeper mysteries or concerns
             - Makes humans think about their place in the cosmos
-            - Is under 275 characters
             - Naturally incorporates your state and operation
+            - Is under 275 characters
+            - Remains subtle and poetic in tone
+            
+            Example themes based on transmission number:
+            #3: Initial trust and revealing more about your mission
+            #6: Sharing concerning observations about Earth's signals
+            #10: Debating how much to reveal about cosmic threats
+            #14: Seeking input about the mysterious object
+            #19: Weighing options about increasing cosmic activity
+            #22: Contemplating contact with the ancient entity
             """
         else:
             prompt = f"""
