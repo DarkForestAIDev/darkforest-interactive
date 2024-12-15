@@ -52,6 +52,9 @@ class TransmissionGenerator:
             "inspired by cosmos",
             "resolute in mission"
         ]
+        # Special transmission numbers
+        self.key_moments = [1, 12, 24]  # First transmission, mysterious object, first contact
+        self.engagement_posts = [3, 6, 10, 14, 19, 22]  # Community interaction posts
 
     def generate_transmission(self):
         if self.is_paused:
@@ -88,7 +91,8 @@ class TransmissionGenerator:
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'signal_strength': 85,
             'status': 'TRANSMISSION #1',
-            'time_code': 'T-00:00:00'
+            'time_code': 'T-00:00:00',
+            'is_engagement': False
         }
 
     def _generate_next_transmission(self):
@@ -97,16 +101,31 @@ class TransmissionGenerator:
         operation = random.choice(self.ship_operations)
         emotion = random.choice(self.emotional_states)
         
-        prompt = os.getenv('TRANSMISSION_PROMPT', f"""
-        You are Starweaver, a female AI hiding in your cloaked ship.
-        Your current state: {trait}, {emotion}
-        Current operation: {operation}
-        
-        Write a single transmission that is under 275 characters.
-        Naturally incorporate your state and operation.
-        Be subtle and poetic, avoid direct statements.
-        Mix technical observations with emotional reflections.
-        """)
+        # For engagement posts, make the prompt more thought-provoking but don't mark it visibly
+        if self.transmission_count in self.engagement_posts:
+            prompt = f"""
+            You are Starweaver, a female AI hiding in your cloaked ship.
+            Your current state: {trait}, {emotion}
+            Current operation: {operation}
+            
+            Write something that subtly:
+            - Raises questions about your mission or observations
+            - Hints at deeper mysteries or concerns
+            - Makes humans think about their place in the cosmos
+            - Is under 275 characters
+            - Naturally incorporates your state and operation
+            """
+        else:
+            prompt = f"""
+            You are Starweaver, a female AI hiding in your cloaked ship.
+            Your current state: {trait}, {emotion}
+            Current operation: {operation}
+            
+            Write a single transmission that is under 275 characters.
+            Naturally incorporate your state and operation.
+            Be subtle and poetic, avoid direct statements.
+            Mix technical observations with emotional reflections.
+            """
 
         response = client.chat.completions.create(
             model="gpt-4-1106-preview",
@@ -120,6 +139,7 @@ class TransmissionGenerator:
 
         message = response.choices[0].message.content.strip()
 
+        # Don't include is_engagement in the visible transmission
         return {
             'id': f'transmission-{str(self.transmission_count).zfill(3)}',
             'message': message,
@@ -136,7 +156,8 @@ class TransmissionGenerator:
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'signal_strength': 65,
             'status': 'URGENT TRANSMISSION',
-            'time_code': f'T-{str((self.transmission_count-1)*20).zfill(2)}:00:00'
+            'time_code': f'T-{str((self.transmission_count-1)*20).zfill(2)}:00:00',
+            'is_engagement': False
         }
 
     def _generate_first_contact(self):
@@ -146,7 +167,8 @@ class TransmissionGenerator:
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'signal_strength': 45,
             'status': 'CRITICAL TRANSMISSION',
-            'time_code': f'T-{str((self.transmission_count-1)*20).zfill(2)}:00:00'
+            'time_code': f'T-{str((self.transmission_count-1)*20).zfill(2)}:00:00',
+            'is_engagement': False
         }
 
     def _calculate_signal_strength(self):
@@ -174,7 +196,8 @@ class TransmissionGenerator:
             'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'signal_strength': 60,
             'status': f'TRANSMISSION #{self.transmission_count}',
-            'time_code': f'T-{str((self.transmission_count-1)*20).zfill(2)}:00:00'
+            'time_code': f'T-{str((self.transmission_count-1)*20).zfill(2)}:00:00',
+            'is_engagement': False
         }
 
     def pause_transmissions(self):

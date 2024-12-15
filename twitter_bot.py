@@ -36,12 +36,14 @@ class TwitterBot:
         tweet_text = f"[TRANSMISSION #{transmission['id'].split('-')[1]}]\n\n{transmission['message']}"
         tweet = self.starweaver_api.update_status(tweet_text)
         
-        # If it's an engagement transmission, add DFI comment
+        # Get transmission number
         transmission_number = int(transmission['id'].split('-')[1])
+        
+        # Add DFI comment for engagement posts
         if transmission_number in [3, 6, 10, 14, 19, 22]:
             self._add_dfi_engagement(tweet.id, transmission)
         
-        # If it's a special event (12 or 24), retweet from DFI
+        # Retweet special events
         if transmission_number in [12, 24]:
             self.dfi_api.retweet(tweet.id)
 
@@ -49,23 +51,36 @@ class TwitterBot:
 
     def _add_dfi_engagement(self, tweet_id, transmission):
         """Add an AI-generated engagement comment from DFI account"""
-        prompt = f"""
-        Based on Starweaver's transmission: "{transmission['message']}"
+        transmission_number = int(transmission['id'].split('-')[1])
         
-        Generate a single engaging question that:
-        - Encourages discussion about the story implications
-        - Feels natural and conversational
-        - Ends with an emoji
+        # Story context based on transmission number
+        story_context = {
+            3: "Starweaver has just revealed herself to Earth, claiming to be hiding in a cloaked ship.",
+            6: "Starweaver has been observing Earth while hiding, mentioning her advanced technology.",
+            10: "Starweaver has hinted at her civilization's fate and her mission to protect Earth.",
+            14: "A mysterious object has been detected, raising questions about other entities.",
+            19: "Signs of ancient cosmic activity are increasing, concerning Starweaver.",
+            22: "First contact with an unknown entity is becoming more likely."
+        }
+
+        prompt = f"""
+        Story context: {story_context[transmission_number]}
+        Current transmission: "{transmission['message']}"
+        
+        As Dark Forest Interactive, generate a thought-provoking question that:
+        - Connects to the story developments so far
+        - Shows you've been following Starweaver's journey
+        - Encourages readers to think about the implications
+        - Relates to the dark forest theory and Earth's safety
+        - Ends with an appropriate emoji
         - Is under 200 characters
-        - Doesn't reveal it's AI-generated
-        - Relates directly to what Starweaver just said
-        - Encourages theories and speculation
+        - Feels like a natural response to this part of the story
         """
 
         response = client.chat.completions.create(
             model="gpt-4-1106-preview",
             messages=[
-                {"role": "system", "content": "You are the Dark Forest Interactive account, engaging with the community about Starweaver's story."},
+                {"role": "system", "content": "You are the Dark Forest Interactive account, deeply invested in Starweaver's story and concerned about the implications for Earth. Your questions should reflect knowledge of the story so far."},
                 {"role": "user", "content": prompt}
             ],
             max_tokens=100,
