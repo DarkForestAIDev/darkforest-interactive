@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chapter Two - Dark Forest Interactive</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
                     <img src="{{ url_for('static', filename='images/Logo RemoveBG.png') }}" alt="Dark Forest Interactive Logo" class="logo">
                 </div>
                 <h1>DARK FOREST INTERACTIVE</h1>
-                <p class="subtitle">OBSERVER: [IDENTITY REDACTED]</p>
+                <p class="subtitle">OBSERVER: <span>[IDENTITY REDACTED]</span></p>
             </div>
             <div class="social-links">
                 <span class="social-link disabled">
@@ -35,17 +35,15 @@
 
         <div class="coming-soon-section">
             <div class="coming-soon-content">
-                <h2>[ENCRYPTED DATA DETECTED]</h2>
-                <div class="loading-text">
-                    <span class="glitch-text" data-text="CHAPTER TWO">CHAPTER TWO</span>
-                    <span class="dots">...</span>
-                </div>
+                <div class="encrypted-line" style="--delay: 0s">[SIGNAL DETECTED]</div>
+                <div class="encrypted-line" style="--delay: 2s">[DECRYPTING...]</div>
+                <div class="encrypted-line glitch-text" style="--delay: 4s" data-text="CHAPTER TWO">CHAPTER TWO</div>
                 <div class="signal-interference"></div>
-                <p class="cryptic-message">[DECRYPTING] Quantum signatures detected... Temporal anomalies increasing...</p>
-                <p class="cryptic-message" style="animation-delay: 2s">[ANALYZING] Pattern match: Proxima-7 transmission protocols...</p>
-                <p class="cryptic-message" style="animation-delay: 4s">[WARNING] Timeline convergence imminent...</p>
+                <div class="encrypted-line" style="--delay: 6s">[ANALYZING] Quantum signatures detected...</div>
+                <div class="encrypted-line" style="--delay: 8s">[SCANNING] Temporal anomalies increasing...</div>
+                <div class="encrypted-line" style="--delay: 10s">[WARNING] Pattern match: Ancient protocols...</div>
                 <div class="signal-interference"></div>
-                <p class="cryptic-message" style="animation-delay: 6s; color: #ff3e3e">Early pathfinders will be remembered when the void speaks again...</p>
+                <div class="encrypted-line warning-text" style="--delay: 12s">The void remembers those who came before...</div>
             </div>
         </div>
     </div>
