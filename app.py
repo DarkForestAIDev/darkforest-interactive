@@ -20,20 +20,64 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 logger.info("Environment variables loaded")
 
+# Initialize Flask app
 app = Flask(__name__)
 logger.info("Flask app created")
 
+# Basic configuration
 app.config['ENV'] = os.getenv('FLASK_ENV', 'production')
 app.config['DEBUG'] = False
 app.config['TESTING'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 
-logger.info(f"App configuration set: ENV={app.config['ENV']}")
-
 # Create static directory if it doesn't exist
 os.makedirs('static', exist_ok=True)
 os.makedirs('static/audio', exist_ok=True)
-logger.info("Static directories created")
+
+# Global variables
+transmissions = []
+last_transmission_time = datetime.now()
+is_paused = True
+api = None
+generator = None
+
+def initialize_services():
+    """Initialize Twitter and other services only when needed"""
+    global api, generator, transmissions, last_transmission_time
+    
+    try:
+        # Initialize Twitter API v1.1
+        auth = tweepy.OAuthHandler(
+            os.getenv('STARWEAVER_CONSUMER_KEY'),
+            os.getenv('STARWEAVER_CONSUMER_SECRET')
+        )
+        auth.set_access_token(
+            os.getenv('STARWEAVER_ACCESS_TOKEN'),
+            os.getenv('STARWEAVER_ACCESS_TOKEN_SECRET')
+        )
+        api = tweepy.API(auth)
+        
+        # Initialize transmission generator
+        generator = TransmissionGenerator()
+        
+        # Load existing transmissions
+        try:
+            with open('static/transmissions.json', 'r') as f:
+                transmissions = json.load(f)
+                if transmissions:
+                    last_transmission_time = datetime.strptime(transmissions[0]['timestamp'], '%Y-%m-%d %H:%M:%S')
+        except (FileNotFoundError, json.JSONDecodeError):
+            transmissions = []
+            
+        logger.info("Services initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing services: {str(e)}")
+        # Continue running even if services fail to initialize
+
+# Initialize services in background
+threading.Thread(target=initialize_services, daemon=True).start()
+
+logger.info(f"App configuration set: ENV={app.config['ENV']}")
 
 # Add debug logging
 @app.before_request
@@ -119,14 +163,6 @@ CONSUMER_SECRET = os.getenv('STARWEAVER_CONSUMER_SECRET')
 ACCESS_TOKEN = os.getenv('STARWEAVER_ACCESS_TOKEN')
 ACCESS_TOKEN_SECRET = os.getenv('STARWEAVER_ACCESS_TOKEN_SECRET')
 
-# Initialize Twitter API v1.1
-auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
-auth.set_access_token(ACCESS_TOKEN, ACCESS_TOKEN_SECRET)
-api = tweepy.API(auth)
-
-# Initialize transmission generator
-generator = TransmissionGenerator()
-
 def post_to_twitter(transmission):
     try:
         # Format the message for Twitter
@@ -167,12 +203,6 @@ def save_transmissions(transmissions_data):
     os.makedirs('static', exist_ok=True)
     with open('static/transmissions.json', 'w') as f:
         json.dump(transmissions_data, f, indent=2)
-
-transmissions = load_transmissions()
-last_transmission_time = datetime.now()  # Default to current time if no transmissions
-
-# Add global pause flag
-is_paused = True  # Start paused
 
 def generate_transmissions():
     global last_transmission_time, transmissions, is_paused
