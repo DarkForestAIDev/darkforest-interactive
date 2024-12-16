@@ -36,46 +36,44 @@ os.makedirs('static/audio', exist_ok=True)
 
 # Global variables
 transmissions = []
-last_transmission_time = datetime.now()
-is_paused = True
+last_transmission_time = None  # Changed to None by default
+is_paused = True  # Start paused
 api = None
 generator = None
 
-def initialize_services():
-    """Initialize Twitter and other services only when needed"""
-    global api, generator, transmissions, last_transmission_time
-    
-    try:
-        # Initialize Twitter API v1.1
-        auth = tweepy.OAuthHandler(
-            os.getenv('STARWEAVER_CONSUMER_KEY'),
-            os.getenv('STARWEAVER_CONSUMER_SECRET')
-        )
-        auth.set_access_token(
-            os.getenv('STARWEAVER_ACCESS_TOKEN'),
-            os.getenv('STARWEAVER_ACCESS_TOKEN_SECRET')
-        )
-        api = tweepy.API(auth)
-        
-        # Initialize transmission generator
-        generator = TransmissionGenerator()
-        
-        # Load existing transmissions
+def initialize_twitter():
+    """Initialize Twitter API only when needed"""
+    global api
+    if api is None:  # Only initialize if not already done
         try:
-            with open('static/transmissions.json', 'r') as f:
-                transmissions = json.load(f)
-                if transmissions:
-                    last_transmission_time = datetime.strptime(transmissions[0]['timestamp'], '%Y-%m-%d %H:%M:%S')
-        except (FileNotFoundError, json.JSONDecodeError):
-            transmissions = []
-            
-        logger.info("Services initialized successfully")
-    except Exception as e:
-        logger.error(f"Error initializing services: {str(e)}")
-        # Continue running even if services fail to initialize
+            auth = tweepy.OAuthHandler(
+                os.getenv('STARWEAVER_CONSUMER_KEY'),
+                os.getenv('STARWEAVER_CONSUMER_SECRET')
+            )
+            auth.set_access_token(
+                os.getenv('STARWEAVER_ACCESS_TOKEN'),
+                os.getenv('STARWEAVER_ACCESS_TOKEN_SECRET')
+            )
+            api = tweepy.API(auth)
+            logger.info("Twitter API initialized successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Error initializing Twitter: {str(e)}")
+            return False
+    return True
 
-# Initialize services in background
-threading.Thread(target=initialize_services, daemon=True).start()
+def initialize_generator():
+    """Initialize transmission generator only when needed"""
+    global generator
+    if generator is None:  # Only initialize if not already done
+        try:
+            generator = TransmissionGenerator()
+            logger.info("Transmission generator initialized successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Error initializing generator: {str(e)}")
+            return False
+    return True
 
 logger.info(f"App configuration set: ENV={app.config['ENV']}")
 
@@ -164,69 +162,68 @@ ACCESS_TOKEN = os.getenv('STARWEAVER_ACCESS_TOKEN')
 ACCESS_TOKEN_SECRET = os.getenv('STARWEAVER_ACCESS_TOKEN_SECRET')
 
 def post_to_twitter(transmission):
+    """Post to Twitter with initialization check"""
     try:
-        # Format the message for Twitter
+        if not initialize_twitter():  # DIFFERENT: Check Twitter is ready before posting
+            logger.error("Twitter not initialized, skipping post")
+            return False
+            
         tweet_text = f"[TRANSMISSION #{transmission['id'].split('-')[1]}]\n\n{transmission['message']}"
-        print(f"Attempting to post tweet with API v1.1: {tweet_text}")
-        print(f"Using Consumer Key: {CONSUMER_KEY[:5]}...")
+        logger.info(f"Attempting to post tweet: {tweet_text}")
         
-        # Post tweet using v1.1 endpoint
         status = api.update_status(tweet_text)
-        print(f"Posted transmission {transmission['id']}")
-        print(f"Tweet ID: {status.id}")
+        logger.info(f"Posted transmission {transmission['id']}, Tweet ID: {status.id}")
         return True
             
     except Exception as e:
-        print(f"Error posting to Twitter: {str(e)}")
-        print(f"Error type: {type(e)}")
-        print(f"Error details: {e.__dict__ if hasattr(e, '__dict__') else 'No details available'}")
+        logger.error(f"Error posting to Twitter: {str(e)}")
         return False
 
-# Load existing transmissions from file or initialize with first transmission
-def load_transmissions():
-    try:
-        with open('static/transmissions.json', 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        initial_transmission = {
-            'id': 'transmission-001',
-            'message': 'Hello... This is Starweaver. Can anyone hear me? I am transmitting from the void between stars...',
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'signal_strength': 85,
-            'status': 'TRANSMISSION #1',
-            'time_code': 'T-00:00:00'
-        }
-        # Save the initial transmission
-        os.makedirs('static', exist_ok=True)
-        with open('static/transmissions.json', 'w') as f:
-            json.dump([initial_transmission], f, indent=2)
-        return [initial_transmission]  # Return the initial transmission instead of empty list
-
-def save_transmissions(transmissions_data):
+# Load initial transmission on startup
+def load_initial_transmission():
+    """Load or create the first transmission"""
+    initial_transmission = {
+        'id': 'transmission-001',
+        'message': 'Hello... This is Starweaver. Can anyone hear me? I am transmitting from the void between stars...',
+        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'signal_strength': 85,
+        'status': 'TRANSMISSION #1',
+        'time_code': 'T-00:00:00'
+    }
+    
+    # Save to file
     os.makedirs('static', exist_ok=True)
     with open('static/transmissions.json', 'w') as f:
-        json.dump(transmissions_data, f, indent=2)
+        json.dump([initial_transmission], f, indent=2)
+    
+    return [initial_transmission]
+
+# Load transmissions at startup
+transmissions = load_initial_transmission()
 
 def generate_transmissions():
+    """Background thread that only runs when we want new transmissions"""
     global last_transmission_time, transmissions, is_paused
     while True:
-        if not is_paused:  # Only generate if not paused
+        if not is_paused and last_transmission_time is not None:  # Only generate if not paused AND we've started
             current_time = datetime.now()
             time_since_last = current_time - last_transmission_time
             
             if time_since_last >= timedelta(minutes=20):
-                new_transmission = generator.generate_transmission()
-                if new_transmission:
-                    transmissions.insert(0, new_transmission)
-                    save_transmissions(transmissions)
-                    last_transmission_time = current_time
-                    print(f"New transmission generated at {current_time}")
+                if initialize_generator():  # Only generate if generator is ready
+                    new_transmission = generator.generate_transmission()
+                    if new_transmission:
+                        transmissions.insert(0, new_transmission)
+                        save_transmissions(transmissions)
+                        last_transmission_time = current_time
+                        # Try to post to Twitter, but don't worry if it fails
+                        try:
+                            post_to_twitter(new_transmission)
+                        except Exception as e:
+                            logger.error(f"Twitter post failed: {str(e)}")
+                        logger.info(f"New transmission generated at {current_time}")
         
         time.sleep(60)  # Check every minute
-
-# Start the transmission generation thread
-transmission_thread = threading.Thread(target=generate_transmissions, daemon=True)
-transmission_thread.start()
 
 @app.route('/')
 @app.route('/chapter-one')
@@ -367,78 +364,41 @@ def get_status():
         "next_transmission": (last_transmission_time + timedelta(minutes=20)).strftime('%Y-%m-%d %H:%M:%S') if not is_paused and transmissions else "cycle not started"
     }
 
-# Add command system routes
-@app.route('/command/<action>', methods=['POST'])
+# Simplified command system - just start and stop
+@app.route('/command/<action>', methods=['POST', 'GET'])
 def handle_command(action):
-    global transmissions
+    global last_transmission_time, is_paused
     
-    if action == "start_chapter_one":
-        try:
-            # Start fresh with Chapter One
-            initial_transmission = {
-                'id': 'transmission-001',
-                'message': 'Hello... This is Starweaver. Can anyone hear me? I am transmitting from the void between stars...',
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'signal_strength': 85,
-                'status': 'TRANSMISSION #1',
-                'time_code': 'T-00:00:00'
-            }
+    if action == "start":
+        if last_transmission_time is None:  # If we haven't started yet
+            last_transmission_time = datetime.now()  # Start the timer
+            is_paused = False  # Unpause
+            return {"status": "success", "message": "Story started! First new transmission in 20 minutes."}
+        else:
+            is_paused = False  # Just unpause if we've already started
+            return {"status": "success", "message": "Story resumed!"}
             
-            # Save to file
-            os.makedirs('static', exist_ok=True)
-            with open('static/transmissions.json', 'w') as f:
-                json.dump([initial_transmission], f, indent=2)
-            
-            # Update global transmissions
-            transmissions = [initial_transmission]
-            last_transmission_time = datetime.now()
-            
-            logger.info("First transmission created successfully")
-            return {"status": "success", "message": "First transmission posted"}
-        except Exception as e:
-            logger.error(f"Error posting first transmission: {str(e)}")
-            return {"status": "error", "message": str(e)}
-            
-    elif action == "start_chapter_two":
-        # Archive current transmissions as Chapter One
-        if os.path.exists('static/transmissions.json'):
-            with open('static/transmissions.json', 'r') as f:
-                chapter_one = json.load(f)
-            with open('static/chapter_one_archive.json', 'w') as f:
-                json.dump(chapter_one, f, indent=2)
-        
-        # Start Chapter Two with new entity
-        transmissions = [{
-            'id': 'echo-001',
-            'message': '[SIGNAL ORIGIN: UNKNOWN] We have watched. We have waited. Now, we must speak...',
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'signal_strength': 92,
-            'status': 'ECHO #1',
-            'time_code': 'T-00:00:00'
-        }]
-        save_transmissions(transmissions)
-        generator.start_chapter_two()
-        return {"status": "success", "message": "Chapter Two started. Chapter One has been archived."}
-        
     elif action == "pause":
-        generator.pause_transmissions()
-        return {"status": "success", "message": f"Story paused at transmission #{generator.transmission_count - 1}"}
-        
-    elif action == "resume":
-        generator.resume_transmissions()
-        return {"status": "success", "message": "Story resumed"}
+        is_paused = True
+        return {"status": "success", "message": "Story paused"}
         
     elif action == "status":
+        if last_transmission_time is None:
+            status = "ready to start"
+        else:
+            status = "paused" if is_paused else "running"
+            
         return {
             "status": "success",
-            "is_paused": generator.is_paused,
-            "current_transmission": generator.transmission_count - 1,
-            "last_transmission_time": last_transmission_time.strftime('%Y-%m-%d %H:%M:%S'),
-            "total_transmissions": len(transmissions),
-            "chapter": "Two" if hasattr(generator, 'is_chapter_two') and generator.is_chapter_two else "One"
+            "story_status": status,
+            "total_transmissions": len(transmissions)
         }
     
     return {"status": "error", "message": "Unknown command"}
+
+# Start the transmission thread
+transmission_thread = threading.Thread(target=generate_transmissions, daemon=True)
+transmission_thread.start()
 
 # Add route for archive page
 @app.route('/archive')
@@ -490,46 +450,6 @@ def test_transmission():
         return "Test transmission posted successfully! Check @Starweaver_AI on Twitter."
     else:
         return "Error posting test transmission. Check the console for details."
-
-# Add route to post first transmission
-@app.route('/admin/post-first')
-@requires_auth
-def post_first_transmission():
-    global transmissions, last_transmission_time
-    
-    if transmissions:
-        return "First transmission already posted"
-        
-    initial_transmission = {
-        'id': 'transmission-001',
-        'message': 'Hello... This is Starweaver. Can anyone hear me? I am transmitting from the void between stars...',
-        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'signal_strength': 85,
-        'status': 'TRANSMISSION #1',
-        'time_code': 'T-00:00:00'
-    }
-    
-    # Save to file
-    transmissions.insert(0, initial_transmission)
-    save_transmissions(transmissions)
-    last_transmission_time = datetime.now()
-    
-    # Post to Twitter
-    try:
-        post_to_twitter(initial_transmission)
-        return "First transmission posted successfully to website and Twitter"
-    except Exception as e:
-        return f"First transmission posted to website but Twitter error: {str(e)}"
-
-# Add route to start the transmission cycle
-@app.route('/admin/start-cycle')
-@requires_auth
-def start_transmission_cycle():
-    global is_paused
-    if not transmissions:
-        return "Please post the first transmission before starting the cycle"
-    is_paused = False
-    return "Transmission cycle started. New transmissions will begin in 20 minutes."
 
 @app.route('/greeting-audio')
 @rate_limit
