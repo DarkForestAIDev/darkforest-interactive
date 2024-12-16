@@ -3,11 +3,9 @@ services:
     name: darkforest-interactive
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 4 --log-level debug
+    startCommand: "gunicorn --bind=0.0.0.0:$PORT --timeout 120 --workers 1 app:app"
     pythonVersion: 3.11.0
     envVars:
-      - key: PORT
-        value: "10000"
       - key: FLASK_APP
         value: app.py
       - key: FLASK_ENV

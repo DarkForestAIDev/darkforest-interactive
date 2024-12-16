@@ -396,10 +396,6 @@ def handle_command(action):
     
     return {"status": "error", "message": "Unknown command"}
 
-# Start the transmission thread
-transmission_thread = threading.Thread(target=generate_transmissions, daemon=True)
-transmission_thread.start()
-
 # Add route for archive page
 @app.route('/archive')
 def archive():
@@ -501,8 +497,18 @@ def get_greeting_audio():
         print(f"Error sending file: {str(e)}")
         return f"Error sending audio: {str(e)}", 500
 
+@app.before_first_request
+def start_background_thread():
+    """Start the transmission thread when the first request comes in"""
+    global transmission_thread
+    if not hasattr(app, 'transmission_thread_started'):
+        logger.info("Starting transmission thread")
+        transmission_thread = threading.Thread(target=generate_transmissions, daemon=True)
+        transmission_thread.start()
+        app.transmission_thread_started = True
+        logger.info("Transmission thread started")
+
 if __name__ == '__main__':
     logger.info("Starting the application")
     port = int(os.environ.get('PORT', 10000))
-    logger.info(f"Using port: {port}")
     app.run(host='0.0.0.0', port=port) 
