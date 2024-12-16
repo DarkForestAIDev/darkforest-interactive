@@ -3,13 +3,13 @@ import random
 import json
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+import openai  # Changed to direct import
 
 # Load environment variables
 load_dotenv()
 
-# Configure OpenAI - simpler initialization
-client = OpenAI()  # It will automatically use OPENAI_API_KEY from environment
+# Configure OpenAI - using basic API key setup
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 class TransmissionGenerator:
     def __init__(self):
@@ -144,7 +144,7 @@ class TransmissionGenerator:
             Mix technical observations with emotional reflections.
             """
 
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-4-1106-preview",
             messages=[
                 {"role": "system", "content": "Write natural thoughts that complete within 275 characters."},
@@ -154,7 +154,7 @@ class TransmissionGenerator:
             temperature=0.75
         )
 
-        message = response.choices[0].message.content.strip()
+        message = response.choices[0].message['content'].strip()
 
         # Don't include is_engagement in the visible transmission
         return {
