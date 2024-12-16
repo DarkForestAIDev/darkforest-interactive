@@ -3,12 +3,12 @@ import random
 import json
 import os
 from dotenv import load_dotenv
-import openai  # Changed to direct import
+import openai
 
 # Load environment variables
 load_dotenv()
 
-# Configure OpenAI - using basic API key setup
+# Configure OpenAI
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
 class TransmissionGenerator:
