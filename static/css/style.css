@@ -590,3 +590,142 @@ h1 {
         box-shadow: 0 0 0 0 rgba(0, 255, 157, 0);
     }
 }
+
+/* Transmission Page Styles */
+.next-transmission {
+    text-align: center;
+    margin: 2rem 0;
+    padding: 1rem;
+    border: 1px solid var(--primary-color);
+    background: rgba(0, 255, 157, 0.02);
+}
+
+.countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.countdown .time {
+    font-size: 2em;
+    color: var(--primary-color);
+    text-shadow: 0 0 10px var(--primary-color);
+}
+
+.latest-transmission {
+    margin: 2rem 0;
+}
+
+.latest-transmission h2 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px var(--primary-color);
+}
+
+.transmission {
+    border: 1px solid var(--primary-color);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    background: rgba(0, 255, 157, 0.02);
+}
+
+.transmission.latest {
+    border-width: 2px;
+    background: rgba(0, 255, 157, 0.05);
+}
+
+.transmission-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.status {
+    color: var(--primary-color);
+    font-weight: bold;
+}
+
+.signal-strength {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.signal-bar {
+    width: 100px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    position: relative;
+}
+
+.signal-bar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: var(--strength);
+    background: var(--primary-color);
+    box-shadow: 0 0 10px var(--primary-color);
+}
+
+.message {
+    font-size: 1.1em;
+    margin: 1rem 0;
+    line-height: 1.6;
+}
+
+.timestamp {
+    color: var(--text-color);
+    opacity: 0.7;
+    font-size: 0.9em;
+}
+
+.archive-separator {
+    margin: 3rem 0;
+    text-align: center;
+    position: relative;
+}
+
+.archive-separator h3 {
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+    text-shadow: 0 0 10px var(--primary-color);
+}
+
+.separator-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
+    margin: 1rem 0;
+}
+
+.transmission-feed {
+    margin-top: 2rem;
+}
+
+/* Play Audio Button Styles */
+.play-audio {
+    background: none;
+    border: 1px solid var(--primary-color);
+    color: var(--primary-color);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.play-audio:hover {
+    background: rgba(0, 255, 157, 0.1);
+    transform: scale(1.1);
+}
+
+.play-audio.playing {
+    background: rgba(0, 255, 157, 0.2);
+    animation: pulse 2s infinite;
+}

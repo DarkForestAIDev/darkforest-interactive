@@ -196,6 +196,10 @@ def load_initial_transmission():
     with open('static/transmissions.json', 'w') as f:
         json.dump([initial_transmission], f, indent=2)
     
+    global last_transmission_time
+    if last_transmission_time is None:
+        last_transmission_time = datetime.now()
+    
     return [initial_transmission]
 
 # Load transmissions at startup
@@ -253,6 +257,13 @@ def about():
 def transmissions_page():
     try:
         logger.info("Attempting to render transmissions page")
+        # Check if last_transmission_time is None
+        if last_transmission_time is None:
+            logger.info("last_transmission_time is None, setting default message")
+            return render_template('transmissions.html', 
+                                 transmissions=transmissions,
+                                 next_update="Transmissions not started")
+
         # Calculate time until next transmission
         time_since_last = datetime.now() - last_transmission_time
         time_remaining = timedelta(minutes=20) - time_since_last
@@ -264,6 +275,7 @@ def transmissions_page():
         formatted_time = f"{minutes}:{str(seconds).zfill(2)}"
         
         logger.info(f"Current transmissions: {transmissions}")
+        logger.info(f"last_transmission_time: {last_transmission_time}")
         return render_template('transmissions.html', 
                              transmissions=transmissions,
                              next_update=formatted_time)

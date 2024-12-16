@@ -1,8 +1,8 @@
-# Environment variables
+# Environment variables and secrets
 .env
 .env.*
 
-# Python
+# Python files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -10,33 +10,24 @@ __pycache__/
 .Python
 env/
 
-# VS Code
+# Editor files
 .vscode/
 *.code-workspace
 
-# System Files
+# System files
 .DS_Store
 Thumbs.db
 
-# Generated files
+# Generated logs and databases
 *.log
 *.db
 *.sqlite3
-transmissions.json
-static/transmissions.json
-static/chapter_*.json
 
-# Story files
-story_config.py
-prompt_guide.md
-chapter_guide.md
-project_development_log.md
-story_control.ps1
-
-# Image files
-images/
-static/images/
-
-# Scripts and local config
+# Local development files
 run_website.bat
 Procfile
+
+# Explicitly include these files
+!static/images/Logo RemoveBG.png
+!story_config.py
+!static/transmissions.json
