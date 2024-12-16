@@ -8,8 +8,8 @@ from openai import OpenAI
 # Load environment variables
 load_dotenv()
 
-# Configure OpenAI
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+# Configure OpenAI - simpler initialization
+client = OpenAI()  # It will automatically use OPENAI_API_KEY from environment
 
 class TransmissionGenerator:
     def __init__(self):
