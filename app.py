@@ -13,12 +13,32 @@ from functools import wraps
 from collections import defaultdict
 
 # Set up logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-load_dotenv()
-logger.info("Environment variables loaded")
+try:
+    load_dotenv()
+    logger.info("Environment variables loaded")
+    
+    # Log presence of critical environment variables (without revealing values)
+    env_vars = [
+        'SECRET_KEY',
+        'OPENAI_API_KEY',
+        'ELEVENLABS_API_KEY',
+        'STARWEAVER_CONSUMER_KEY',
+        'STARWEAVER_CONSUMER_SECRET',
+        'STARWEAVER_ACCESS_TOKEN',
+        'STARWEAVER_ACCESS_TOKEN_SECRET',
+        'ADMIN_USERNAME',
+        'ADMIN_PASSWORD'
+    ]
+    
+    for var in env_vars:
+        logger.info(f"Environment variable {var} is {'SET' if os.getenv(var) else 'NOT SET'}")
+except Exception as e:
+    logger.error(f"Error loading environment variables: {str(e)}")
+    raise
 
 # Initialize Flask app
 app = Flask(__name__)
