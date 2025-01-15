@@ -12,7 +12,8 @@ def initialize_first_transmission():
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'signal_strength': 85,
         'status': 'TRANSMISSION #1',
-        'time_code': 'T-00:00:00'
+        'time_code': 'T-00:00:00',
+        'is_engagement': False
     }
     
     transmissions = [initial_transmission]

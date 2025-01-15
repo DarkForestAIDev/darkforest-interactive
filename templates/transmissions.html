@@ -96,10 +96,35 @@
         {% endif %}
 
         <script>
+            // Audio state tracking
+            let currentlyPlaying = null;
+            let checkInterval = null;
+
+            // Function to check for new transmissions
+            function checkForNewTransmissions() {
+                fetch('/check-new-transmission')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Checking for new transmissions:', data);
+                        if (data.new_transmission) {
+                            console.log('New transmission detected, reloading...');
+                            location.reload();
+                        }
+                    })
+                    .catch(error => console.error('Error checking for new transmissions:', error));
+            }
+
             // Countdown timer
             function updateCountdown() {
                 let countdown = document.getElementById('countdown');
                 let timeString = countdown.textContent;
+                
+                if (timeString === "Transmissions not started") {
+                    // Check every 5 seconds even when not started
+                    checkInterval = setInterval(checkForNewTransmissions, 5000);
+                    return;
+                }
+                
                 let [minutes, seconds] = timeString.split(':').map(num => parseInt(num));
                 let totalSeconds = minutes * 60 + seconds;
                 
@@ -109,65 +134,73 @@
                     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
                 }
                 
-                setInterval(() => {
-                    totalSeconds = totalSeconds > 0 ? totalSeconds - 1 : 1200; // 20 minutes = 1200 seconds
-                    countdown.textContent = formatTime(totalSeconds);
+                // Clear any existing interval
+                if (checkInterval) {
+                    clearInterval(checkInterval);
+                }
+                
+                // Start checking for new transmissions every 5 seconds
+                checkInterval = setInterval(checkForNewTransmissions, 5000);
+                
+                // Update countdown every second
+                let timer = setInterval(() => {
+                    if (totalSeconds > 0) {
+                        totalSeconds--;
+                        countdown.textContent = formatTime(totalSeconds);
+                    } else {
+                        // Reset countdown to 1 minute for testing
+                        totalSeconds = 60;
+                        countdown.textContent = formatTime(totalSeconds);
+                    }
                 }, 1000);
             }
 
-            // Audio playback handling
-            let currentlyPlaying = null;
+            // Start the countdown when the page loads
+            document.addEventListener('DOMContentLoaded', updateCountdown);
 
+            // Function to play transmission audio
             function playTransmission(transmissionId) {
                 const audio = document.getElementById(`audio-${transmissionId}`);
                 const button = document.querySelector(`button[onclick="playTransmission('${transmissionId}')"]`);
                 
+                // Stop any currently playing audio
                 if (currentlyPlaying && currentlyPlaying !== audio) {
                     currentlyPlaying.pause();
                     currentlyPlaying.currentTime = 0;
                     const oldButton = document.querySelector(`button[onclick="playTransmission('${currentlyPlaying.id.replace('audio-', '')}')"]`);
-                    oldButton.classList.remove('playing');
-                    oldButton.querySelector('i').classList.add('fa-play');
-                    oldButton.querySelector('i').classList.remove('fa-pause');
+                    if (oldButton) {
+                        oldButton.innerHTML = '<i class="fas fa-play"></i>';
+                    }
                 }
-
+                
                 if (audio.paused) {
-                    audio.play().catch(function(error) {
-                        console.log("Audio playback error:", error);
-                    });
-                    button.classList.add('playing');
-                    button.querySelector('i').classList.add('fa-pause');
-                    button.querySelector('i').classList.remove('fa-play');
-                    currentlyPlaying = audio;
+                    audio.play()
+                        .then(() => {
+                            button.innerHTML = '<i class="fas fa-pause"></i>';
+                            currentlyPlaying = audio;
+                        })
+                        .catch(error => {
+                            console.error('Error playing audio:', error);
+                            button.innerHTML = '<i class="fas fa-play"></i>';
+                        });
                 } else {
                     audio.pause();
-                    audio.currentTime = 0;
-                    button.classList.remove('playing');
-                    button.querySelector('i').classList.add('fa-play');
-                    button.querySelector('i').classList.remove('fa-pause');
-                    currentlyPlaying = null;
+                    button.innerHTML = '<i class="fas fa-play"></i>';
                 }
-
-                audio.onended = function() {
-                    button.classList.remove('playing');
-                    button.querySelector('i').classList.add('fa-play');
-                    button.querySelector('i').classList.remove('fa-pause');
+                
+                // Reset button when audio ends
+                audio.onended = () => {
+                    button.innerHTML = '<i class="fas fa-play"></i>';
                     currentlyPlaying = null;
                 };
             }
 
-            // Auto-refresh the page when new transmission should be available
-            function setupAutoRefresh() {
-                setInterval(() => {
-                    location.reload();
-                }, 20000); // Refresh every 20 seconds
-            }
-
-            // Start the countdown and auto-refresh when the page loads
-            window.onload = function() {
-                updateCountdown();
-                setupAutoRefresh();
-            };
+            // Clean up intervals when leaving the page
+            window.addEventListener('beforeunload', () => {
+                if (checkInterval) {
+                    clearInterval(checkInterval);
+                }
+            });
         </script>
     </div>
 </body>

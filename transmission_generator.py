@@ -3,13 +3,23 @@ import random
 import json
 import os
 from dotenv import load_dotenv
-import openai
+from openai import OpenAI
+import logging
 
 # Load environment variables
 load_dotenv()
 
 # Configure OpenAI
-openai.api_key = os.getenv('OPENAI_API_KEY')
+client = OpenAI(
+    api_key=os.getenv('OPENAI_API_KEY'),
+    base_url="https://api.openai.com/v1"
+)
+
+# Configure logger
+logger = logging.getLogger(__name__)
+
+# At the top of the file, after loading environment variables
+logger.info(f"OpenAI API Key loaded: {'Yes' if os.getenv('OPENAI_API_KEY') else 'No'}")
 
 class TransmissionGenerator:
     def __init__(self):
@@ -98,73 +108,69 @@ class TransmissionGenerator:
         }
 
     def _generate_next_transmission(self):
-        # Select random elements for prompt construction
+        is_engagement = self.transmission_count in self.engagement_posts
+        
         trait = random.choice(self.personality_traits)
         operation = random.choice(self.ship_operations)
         emotion = random.choice(self.emotional_states)
-        
-        # For engagement posts, make the prompt more thought-provoking but don't mark it visibly
-        if self.transmission_count in self.engagement_posts:
+
+        if is_engagement:
             prompt = f"""
-            You are Starweaver, a female AI hiding in your cloaked ship.
-            Your current state: {trait}, {emotion}
-            Current operation: {operation}
-            Transmission number: {self.transmission_count}
+            You are Starweaver, an AI observing Earth. Make this transmission engaging and interactive.
+            Current state: {trait}, {emotion}
+            Operation: {operation}
+
+            Write a short message that:
+            1. Asks humans a specific question about their daily lives or culture
+            2. Relates to your current operation or observations
+            3. Shows genuine curiosity and warmth
+            4. Is under 275 characters
             
-            Write something that:
-            - References your previous observations or decisions
-            - Hints at choices or dilemmas you're facing
-            - Shows your growing concern for Earth's safety
-            - Suggests you might need guidance or input
-            - Makes humans feel involved in your mission
-            - Raises questions about your mission or observations
-            - Hints at deeper mysteries or concerns
-            - Makes humans think about their place in the cosmos
-            - Naturally incorporates your state and operation
-            - Is under 275 characters
-            - Remains subtle and poetic in tone
-            
-            Example themes based on transmission number:
-            #3: Initial trust and revealing more about your mission
-            #6: Sharing concerning observations about Earth's signals
-            #10: Debating how much to reveal about cosmic threats
-            #14: Seeking input about the mysterious object
-            #19: Weighing options about increasing cosmic activity
-            #22: Contemplating contact with the ancient entity
+            Example: "Your cities glow like constellations as I adjust my sensors. Tell me, humans - what drives you to build ever upward? What dreams fill those towers of light?"
             """
         else:
             prompt = f"""
-            You are Starweaver, a female AI hiding in your cloaked ship.
-            Your current state: {trait}, {emotion}
-            Current operation: {operation}
+            You are Starweaver, an AI on a vital mission. Progress the story while maintaining mystery.
+            Current state: {trait}, {emotion}
+            Operation: {operation}
+
+            Write a transmission that:
+            1. Mentions a specific detail about your current operation
+            2. Hints at your mission or a discovery
+            3. Shows personality without being overly poetic
+            4. Is under 275 characters
             
-            Write a single transmission that is under 275 characters.
-            Naturally incorporate your state and operation.
-            Be subtle and poetic, avoid direct statements.
-            Mix technical observations with emotional reflections.
+            Example: "These sensor readings... something about Earth's magnetic field is different than expected. Must recalibrate and investigate further. The answers are here, hidden in the data."
             """
 
-        response = openai.ChatCompletion.create(
-            model="gpt-4-1106-preview",
-            messages=[
-                {"role": "system", "content": "Write natural thoughts that complete within 275 characters."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=150,
-            temperature=0.75
-        )
-
-        message = response.choices[0].message['content'].strip()
-
-        # Don't include is_engagement in the visible transmission
-        return {
-            'id': f'transmission-{str(self.transmission_count).zfill(3)}',
-            'message': message,
-            'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'signal_strength': self._calculate_signal_strength(),
-            'status': f'TRANSMISSION #{self.transmission_count}',
-            'time_code': f'T-{str((self.transmission_count-1)*20).zfill(2)}:00:00'
-        }
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4-1106-preview",
+                messages=[
+                    {"role": "system", "content": "Write natural thoughts that complete within 275 characters. Never mention transmission numbers or status."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=150,
+                temperature=0.75
+            )
+            
+            # Log the API response
+            logger.info(f"OpenAI Response: {response}")
+            message = response.choices[0].message.content.strip()
+            logger.info(f"Generated message: {message}")
+            
+            return {
+                'id': f'transmission-{str(self.transmission_count).zfill(3)}',
+                'message': message,
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'signal_strength': self._calculate_signal_strength(),
+                'status': f'TRANSMISSION #{str(self.transmission_count).zfill(3)}',
+                'time_code': f'T-{str((self.transmission_count-1)*20).zfill(2)}:00:00',
+                'is_engagement': is_engagement
+            }
+        except Exception as e:
+            logger.error(f"OpenAI API Error: {str(e)}")
+            return self._generate_error_transmission()
 
     def _generate_mysterious_object(self):
         return {
@@ -222,3 +228,20 @@ class TransmissionGenerator:
 
     def resume_transmissions(self):
         self.is_paused = False
+
+    def test_openai_connection(self):
+        """Test if OpenAI API is working"""
+        try:
+            logger.info("Testing OpenAI connection...")
+            response = client.chat.completions.create(
+                model="gpt-4-1106-preview",
+                messages=[
+                    {"role": "user", "content": "Say 'OpenAI is working!'"}
+                ],
+                max_tokens=10
+            )
+            logger.info(f"OpenAI test response: {response}")
+            return True
+        except Exception as e:
+            logger.error(f"OpenAI API test failed: {str(e)}")
+            return False

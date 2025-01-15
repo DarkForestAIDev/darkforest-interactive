@@ -12,52 +12,71 @@ from dotenv import load_dotenv
 from functools import wraps
 from collections import defaultdict
 
-# Set up logging
+# Set up logging first
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
+TESTING_MODE = True  # Make sure this is True
+TRANSMISSION_INTERVAL = 15  # Changed from 20 to 15 minutes
+
+def save_start_time():
+    try:
+        with open('static/start_time.txt', 'w') as f:
+            current_time = datetime.now()
+            f.write(current_time.strftime('%Y-%m-%d %H:%M:%S'))
+            logger.info(f"Saved start time: {current_time}")
+        return True
+    except Exception as e:
+        logger.error(f"Error saving start time: {str(e)}")
+        return False
+
+def load_start_time():
+    try:
+        with open('static/start_time.txt', 'r') as f:
+            return datetime.strptime(f.read().strip(), '%Y-%m-%d %H:%M:%S')
+    except:
+        return None
+
 try:
+    # Load environment variables
     load_dotenv()
-    logger.info("Environment variables loaded")
+    logger.info("Starting application initialization...")
+
+    # Initialize Flask app
+    app = Flask(__name__)
     
-    # Log presence of critical environment variables (without revealing values)
-    env_vars = [
-        'SECRET_KEY',
-        'OPENAI_API_KEY',
-        'ELEVENLABS_API_KEY',
-        'STARWEAVER_CONSUMER_KEY',
-        'STARWEAVER_CONSUMER_SECRET',
-        'STARWEAVER_ACCESS_TOKEN',
-        'STARWEAVER_ACCESS_TOKEN_SECRET',
-        'ADMIN_USERNAME',
-        'ADMIN_PASSWORD'
-    ]
+    # Basic configuration
+    app.config['ENV'] = os.getenv('FLASK_ENV', 'production')
+    app.config['DEBUG'] = False
+    app.config['TESTING'] = False
     
-    for var in env_vars:
-        logger.info(f"Environment variable {var} is {'SET' if os.getenv(var) else 'NOT SET'}")
+    # Check if SECRET_KEY is set
+    if not os.getenv('SECRET_KEY'):
+        logger.error("SECRET_KEY not set!")
+        raise ValueError("SECRET_KEY must be set")
+    
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+    
+    # Create static directory if it doesn't exist
+    os.makedirs('static', exist_ok=True)
+    os.makedirs('static/audio', exist_ok=True)
+    
+    # Initialize basic variables
+    transmissions = []
+    last_transmission_time = None
+    is_paused = False
+    api = None
+    generator = None
+    
+    logger.info("Basic initialization complete")
 except Exception as e:
     logger.error(f"Error loading environment variables: {str(e)}")
     raise
 
-# Initialize Flask app
-app = Flask(__name__)
-logger.info("Flask app created")
-
-# Basic configuration
-app.config['ENV'] = os.getenv('FLASK_ENV', 'production')
-app.config['DEBUG'] = False
-app.config['TESTING'] = False
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-
-# Create static directory if it doesn't exist
-os.makedirs('static', exist_ok=True)
-os.makedirs('static/audio', exist_ok=True)
-
 # Global variables
 transmissions = []
 last_transmission_time = None  # Changed to None by default
-is_paused = True  # Start paused
+is_paused = False  # Changed from True to False to allow transmissions
 api = None
 generator = None
 
@@ -83,17 +102,16 @@ def initialize_twitter():
     return True
 
 def initialize_generator():
-    """Initialize transmission generator only when needed"""
+    """Initialize the transmission generator if needed"""
     global generator
-    if generator is None:  # Only initialize if not already done
-        try:
+    try:
+        if generator is None:
             generator = TransmissionGenerator()
-            logger.info("Transmission generator initialized successfully")
-            return True
-        except Exception as e:
-            logger.error(f"Error initializing generator: {str(e)}")
-            return False
-    return True
+            logger.info("Generator initialized successfully")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to initialize generator: {str(e)}")
+        return False
 
 logger.info(f"App configuration set: ENV={app.config['ENV']}")
 
@@ -202,52 +220,93 @@ def post_to_twitter(transmission):
 # Load initial transmission on startup
 def load_initial_transmission():
     """Load or create the first transmission"""
+    try:
+        # Try to load existing transmissions
+        with open('static/transmissions.json', 'r') as f:
+            existing = json.load(f)
+            if existing:
+                logger.info(f"Loaded {len(existing)} existing transmissions")
+                return existing
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        logger.info(f"No existing transmissions found: {str(e)}")
+        
+    # Create initial transmission
     initial_transmission = {
         'id': 'transmission-001',
         'message': 'Hello... This is Starweaver. Can anyone hear me? I am transmitting from the void between stars...',
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
         'signal_strength': 85,
         'status': 'TRANSMISSION #1',
-        'time_code': 'T-00:00:00'
+        'time_code': 'T-00:00:00',
+        'is_engagement': False
     }
     
-    # Save to file
+    # Save initial transmission
     os.makedirs('static', exist_ok=True)
     with open('static/transmissions.json', 'w') as f:
         json.dump([initial_transmission], f, indent=2)
-    
-    global last_transmission_time
-    if last_transmission_time is None:
-        last_transmission_time = datetime.now()
+    logger.info("Created and saved initial transmission")
     
     return [initial_transmission]
 
 # Load transmissions at startup
 transmissions = load_initial_transmission()
 
+def save_transmissions(transmissions_list):
+    """Save transmissions to the JSON file"""
+    try:
+        # Verify all transmissions have correct numbering
+        for i, trans in enumerate(transmissions_list, 1):
+            expected_id = f"transmission-{str(i).zfill(3)}"
+            if trans['id'] != expected_id:
+                logger.error(f"Found incorrect transmission number: {trans['id']}, should be {expected_id}")
+                return False
+        
+        # If all numbers are correct, save
+        with open('static/transmissions.json', 'w') as f:
+            json.dump(transmissions_list, f, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Error saving transmissions: {str(e)}")
+        return False
+
 def generate_transmissions():
     """Background thread that only runs when we want new transmissions"""
     global last_transmission_time, transmissions, is_paused
+    logger.info("Transmission generator thread started")
     while True:
-        if not is_paused and last_transmission_time is not None:  # Only generate if not paused AND we've started
+        try:
             current_time = datetime.now()
-            time_since_last = current_time - last_transmission_time
+            start_time = load_start_time()
             
-            if time_since_last >= timedelta(minutes=20):
-                if initialize_generator():  # Only generate if generator is ready
-                    new_transmission = generator.generate_transmission()
-                    if new_transmission:
-                        transmissions.insert(0, new_transmission)
-                        save_transmissions(transmissions)
-                        last_transmission_time = current_time
-                        # Try to post to Twitter, but don't worry if it fails
-                        try:
-                            post_to_twitter(new_transmission)
-                        except Exception as e:
-                            logger.error(f"Twitter post failed: {str(e)}")
-                        logger.info(f"New transmission generated at {current_time}")
+            if start_time and not is_paused:
+                time_since_start = current_time - start_time
+                minutes_since_start = time_since_start.total_seconds() / 60
+                current_interval = int(minutes_since_start / TRANSMISSION_INTERVAL)
+                next_transmission_time = start_time + timedelta(minutes=(current_interval + 1) * TRANSMISSION_INTERVAL)
+                
+                # Generate just before the next interval
+                if current_time + timedelta(seconds=2) >= next_transmission_time:
+                    logger.info("Generating new transmission...")
+                    if initialize_generator():
+                        new_transmission = generator.generate_transmission()
+                        if new_transmission:
+                            audio_success = generate_transmission_audio(
+                                new_transmission['id'].split('-')[1],
+                                new_transmission['message']
+                            )
+                            if audio_success:
+                                transmissions.insert(0, new_transmission)
+                                success = save_transmissions(transmissions)
+                                if success:
+                                    last_transmission_time = next_transmission_time
+                                    logger.info("Transmission and audio saved successfully")
+                
+        except Exception as e:
+            logger.error(f"Error in generator loop: {str(e)}")
         
-        time.sleep(60)  # Check every minute
+        # Sleep for a shorter time to maintain precision
+        time.sleep(1)
 
 @app.route('/')
 @app.route('/chapter-one')
@@ -276,26 +335,33 @@ def about():
 @rate_limit
 def transmissions_page():
     try:
-        logger.info("Attempting to render transmissions page")
-        # Check if last_transmission_time is None
-        if last_transmission_time is None:
-            logger.info("last_transmission_time is None, setting default message")
+        start_time = load_start_time()
+        
+        if start_time:  # After /command/start is called
+            # Calculate countdown for 15-min intervals
+            time_since_start = datetime.now() - start_time
+            minutes_since_start = time_since_start.total_seconds() / 60
+            intervals_passed = int(minutes_since_start / 15)  # Changed to 15
+            next_interval = (intervals_passed + 1) * 15
+            minutes_remaining = next_interval - minutes_since_start
+            
             return render_template('transmissions.html', 
                                  transmissions=transmissions,
-                                 next_update="Transmissions not started")
+                                 show_initialization=False,  # Hide initialization
+                                 next_update=format_time(minutes_remaining))
 
-        # Calculate time until next transmission
-        time_since_last = datetime.now() - last_transmission_time
-        time_remaining = timedelta(minutes=20) - time_since_last
-        seconds_remaining = max(0, int(time_remaining.total_seconds()))
+        # Calculate time based on original start time
+        time_since_start = datetime.now() - start_time
+        minutes_since_start = time_since_start.total_seconds() / 60
+        intervals_passed = int(minutes_since_start / TRANSMISSION_INTERVAL)
+        next_interval = (intervals_passed + 1) * TRANSMISSION_INTERVAL
+        minutes_remaining = next_interval - minutes_since_start
+        seconds_remaining = int(minutes_remaining * 60)
         
-        # Format initial countdown
         minutes = seconds_remaining // 60
         seconds = seconds_remaining % 60
         formatted_time = f"{minutes}:{str(seconds).zfill(2)}"
         
-        logger.info(f"Current transmissions: {transmissions}")
-        logger.info(f"last_transmission_time: {last_transmission_time}")
         return render_template('transmissions.html', 
                              transmissions=transmissions,
                              next_update=formatted_time)
@@ -306,59 +372,67 @@ def transmissions_page():
 @app.route('/transmission-audio/<transmission_id>')
 @rate_limit
 def get_transmission_audio(transmission_id):
-    print(f"Starting audio generation for: {transmission_id}")
+    # Set up audio path with timestamp to prevent conflicts
+    audio_dir = os.path.join('static', 'audio')
+    os.makedirs(audio_dir, exist_ok=True)
     
     # Find the transmission
     transmission = next((t for t in transmissions if t['id'] == transmission_id), None)
     if not transmission:
         return "Transmission not found", 404
-
-    # Set up audio path
-    audio_dir = os.path.join('static', 'audio')
-    os.makedirs(audio_dir, exist_ok=True)
-    audio_path = os.path.join(audio_dir, f"{transmission_id}.mp3")
-    
-    # Generate audio if it doesn't exist
-    if not os.path.exists(audio_path):
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
         
-        headers = {
-            "Accept": "audio/mpeg",
-            "Content-Type": "application/json",
-            "xi-api-key": ELEVEN_API_KEY
-        }
-
-        data = {
-            "text": transmission['message'],
-            "model_id": "eleven_monolingual_v1",
-            "voice_settings": {
-                "stability": 0.90,
-                "similarity_boost": 0.80,
-                "style": 0.35,
-                "use_speaker_boost": True
-            }
-        }
-
+    # Use timestamp in filename to ensure uniqueness
+    audio_path = os.path.join(audio_dir, 
+        f'transmission-{transmission_id}-{datetime.now().strftime("%Y%m%d-%H%M%S")}.mp3')
+    
+    # Check if audio file already exists
+    if os.path.exists(audio_path):
+        logger.info(f"Using existing audio file for transmission {transmission_id}")
         try:
-            print("Making request to ElevenLabs...")
-            response = requests.post(url, json=data, headers=headers)
-            
-            if response.status_code == 200:
-                with open(audio_path, 'wb') as f:
-                    f.write(response.content)
-                print(f"Audio saved to: {audio_path}")
-            else:
-                print(f"Error: {response.text}")
-                return f"Error generating audio: {response.text}", 500
+            return send_file(audio_path, mimetype='audio/mpeg')
         except Exception as e:
-            print(f"Exception: {str(e)}")
-            return f"Error: {str(e)}", 500
+            logger.error(f"Error sending existing audio file: {str(e)}")
+            return f"Error serving audio: {str(e)}", 500
+
+    # If we get here, we need to generate new audio
+    logger.info(f"No existing audio found for {transmission_id}, generating new...")
+    
+    # Generate new audio
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+    
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": os.getenv('ELEVENLABS_API_KEY')
+    }
+
+    data = {
+        "text": transmission['message'],
+        "model_id": "eleven_monolingual_v1",
+        "voice_settings": {
+            "stability": 0.75,
+            "similarity_boost": 0.75,
+            "style": 0.0,
+            "use_speaker_boost": True
+        }
+    }
 
     try:
-        return send_file(audio_path, mimetype='audio/mpeg')
+        logger.info("Making request to ElevenLabs...")
+        response = requests.post(url, json=data, headers=headers)
+        
+        if response.status_code == 200:
+            # Save the audio file for future use
+            with open(audio_path, 'wb') as f:
+                f.write(response.content)
+            logger.info(f"Audio saved to {audio_path}")
+            return response.content, 200, {'Content-Type': 'audio/mpeg'}
+        else:
+            logger.error(f"ElevenLabs API error: {response.status_code} - {response.text}")
+            return f"Error generating audio: {response.status_code}", 500
     except Exception as e:
-        print(f"Error sending file: {str(e)}")
-        return f"Error sending audio: {str(e)}", 500
+        logger.error(f"Error generating audio: {str(e)}")
+        return f"Error generating audio: {str(e)}", 500
 
 # Add admin authentication
 def requires_auth(f):
@@ -402,10 +476,19 @@ def handle_command(action):
     global last_transmission_time, is_paused
     
     if action == "start":
-        if last_transmission_time is None:  # If we haven't started yet
-            last_transmission_time = datetime.now()  # Start the timer
-            is_paused = False  # Unpause
-            return {"status": "success", "message": "Story started! First new transmission in 20 minutes."}
+        if last_transmission_time is None:
+            # Generate transmission-002 immediately
+            if initialize_generator():
+                new_transmission = generator.generate_transmission()  # This will get next number from existing transmissions
+            
+            # First, save the start time
+            save_start_time()
+            
+            # Set the last transmission time to now
+            last_transmission_time = datetime.now()
+            is_paused = False
+            
+            return {"status": "success", "message": "Story started! First new transmission generated. Next transmission in 15 minutes."}
         else:
             is_paused = False  # Just unpause if we've already started
             return {"status": "success", "message": "Story resumed!"}
@@ -529,16 +612,126 @@ def get_greeting_audio():
         print(f"Error sending file: {str(e)}")
         return f"Error sending audio: {str(e)}", 500
 
+@app.route('/check-new-transmission')
+def check_new_transmission():
+    try:
+        current_time = datetime.now()
+        start_time = load_start_time()
+        if start_time is None:
+            return jsonify({'new_transmission': False})
+            
+        time_since_start = current_time - start_time
+        minutes_since_start = time_since_start.total_seconds() / 60
+        current_interval = int(minutes_since_start / TRANSMISSION_INTERVAL)
+        next_interval = (current_interval + 1) * TRANSMISSION_INTERVAL
+        time_to_next = next_interval - minutes_since_start
+        
+        # Calculate if we should have a new transmission
+        should_have_new = time_to_next <= 0.1  # True when very close to next transmission
+        
+        return jsonify({
+            'new_transmission': should_have_new,
+            'time_to_next': time_to_next,
+            'check_interval': min(time_to_next * 60 * 1000, 5000)  # Check more frequently near transmission time
+        })
+    except Exception as e:
+        logger.error(f"Error checking for new transmission: {str(e)}")
+        return jsonify({'new_transmission': False})
+
+# Start the transmission thread
+if not hasattr(app, 'transmission_thread_started'):
+    logger.info("Starting transmission thread")
+    transmission_thread = threading.Thread(target=generate_transmissions, daemon=True)
+    transmission_thread.start()
+    app.transmission_thread_started = True
+    logger.info("Transmission thread started")
+
+def generate_transmission_audio(transmission_id, message):
+    """Generate audio for a transmission with retry logic"""
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            logger.info(f"Generating audio for transmission {transmission_id}, attempt {retry_count + 1}")
+            
+            # Check if audio already exists
+            audio_path = f'static/audio/transmission-{transmission_id}.mp3'
+            if os.path.exists(audio_path):
+                logger.info(f"Audio already exists for transmission {transmission_id}")
+                return True
+                
+            # Generate new audio
+            response = make_elevenlabs_request(message)
+            if response.status_code == 200:
+                with open(audio_path, 'wb') as f:
+                    f.write(response.content)
+                logger.info(f"Successfully generated audio for transmission {transmission_id}")
+                return True
+            
+            retry_count += 1
+            time.sleep(2)  # Wait before retrying
+            
+        except Exception as e:
+            logger.error(f"Error generating audio for transmission {transmission_id}: {str(e)}")
+            retry_count += 1
+            time.sleep(2)
+    
+    logger.error(f"Failed to generate audio for transmission {transmission_id} after {max_retries} attempts")
+    return False
+
+def make_elevenlabs_request(message):
+    """Make a request to ElevenLabs API"""
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+    
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": os.getenv('ELEVENLABS_API_KEY')
+    }
+    
+    data = {
+        "text": message,
+        "model_id": "eleven_monolingual_v1",
+        "voice_settings": {
+            "stability": 0.75,
+            "similarity_boost": 0.75,
+            "style": 0.0,
+            "use_speaker_boost": True
+        }
+    }
+    
+    return requests.post(url, json=data, headers=headers)
+
+def load_transmissions():
+    """Load transmissions from file"""
+    try:
+        with open('static/transmissions.json', 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+@app.route('/transmissions-content')
+def transmissions_content():
+    """Return only the transmissions content for AJAX updates"""
+    return render_template('transmissions_content.html', 
+                         transmissions=transmissions)
+
+def _verify_transmission_number(transmission):
+    """Verify the transmission number is correct"""
+    try:
+        current_count = len(transmissions)
+        expected_id = f"transmission-{str(current_count + 1).zfill(3)}"
+        if transmission['id'] != expected_id:
+            logger.error(f"Transmission number mismatch. Expected {expected_id}, got {transmission['id']}")
+            transmission['id'] = expected_id
+        return transmission
+    except Exception as e:
+        logger.error(f"Error verifying transmission number: {str(e)}")
+        return None
+
 if __name__ == '__main__':
     logger.info("Starting the application")
     port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
-    
-    # Start the transmission thread after the server is running
-    if not hasattr(app, 'transmission_thread_started'):
-        logger.info("Starting transmission thread")
-        transmission_thread = threading.Thread(target=generate_transmissions, daemon=True)
-        transmission_thread.start()
-        app.transmission_thread_started = True
-        logger.info("Transmission thread started")
   
