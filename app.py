@@ -337,20 +337,13 @@ def transmissions_page():
     try:
         start_time = load_start_time()
         
-        if start_time:  # After /command/start is called
-            # Calculate countdown for 15-min intervals
-            time_since_start = datetime.now() - start_time
-            minutes_since_start = time_since_start.total_seconds() / 60
-            intervals_passed = int(minutes_since_start / 15)  # Changed to 15
-            next_interval = (intervals_passed + 1) * 15
-            minutes_remaining = next_interval - minutes_since_start
-            
+        if start_time is None:  # If we haven't started yet
             return render_template('transmissions.html', 
                                  transmissions=transmissions,
-                                 show_initialization=False,  # Hide initialization
-                                 next_update=format_time(minutes_remaining))
-
-        # Calculate time based on original start time
+                                 show_initialization=True,  # Show initialization display
+                                 next_update=None)  # No countdown yet
+        
+        # If we have started, show countdown
         time_since_start = datetime.now() - start_time
         minutes_since_start = time_since_start.total_seconds() / 60
         intervals_passed = int(minutes_since_start / TRANSMISSION_INTERVAL)
@@ -364,6 +357,7 @@ def transmissions_page():
         
         return render_template('transmissions.html', 
                              transmissions=transmissions,
+                             show_initialization=False,  # Hide initialization after start
                              next_update=formatted_time)
     except Exception as e:
         logger.error(f"Error rendering transmissions: {str(e)}")
