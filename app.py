@@ -337,28 +337,20 @@ def transmissions_page():
     try:
         start_time = load_start_time()
         
-        if start_time is None:  # If we haven't started yet
+        # Safety check for transmissions file
+        if not os.path.exists('static/transmissions.json'):
+            logger.error("Transmissions file missing - reinitializing")
+            transmissions = load_initial_transmission()
+            
+        # Safety check for pre-launch state
+        if start_time is None:  # We haven't started yet - show V1
+            logger.info("Pre-launch state: showing initialization display")
             return render_template('transmissions.html', 
                                  transmissions=transmissions,
                                  show_initialization=True,  # Show initialization display
-                                 next_update=None)  # No countdown yet
-        
-        # If we have started, show countdown
-        time_since_start = datetime.now() - start_time
-        minutes_since_start = time_since_start.total_seconds() / 60
-        intervals_passed = int(minutes_since_start / TRANSMISSION_INTERVAL)
-        next_interval = (intervals_passed + 1) * TRANSMISSION_INTERVAL
-        minutes_remaining = next_interval - minutes_since_start
-        seconds_remaining = int(minutes_remaining * 60)
-        
-        minutes = seconds_remaining // 60
-        seconds = seconds_remaining % 60
-        formatted_time = f"{minutes}:{str(seconds).zfill(2)}"
-        
-        return render_template('transmissions.html', 
-                             transmissions=transmissions,
-                             show_initialization=False,  # Hide initialization after start
-                             next_update=formatted_time)
+                                 next_update=None,  # No countdown yet
+                                 is_prelaunch=True)  # Extra flag for template
+                             
     except Exception as e:
         logger.error(f"Error rendering transmissions: {str(e)}")
         return f"Error: {str(e)}", 500
