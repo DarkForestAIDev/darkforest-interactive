@@ -16,7 +16,7 @@ The universe is a dark forest where every civilization is a hunter with a raised
 ### Features
 
 - 🤖 **AI-Generated Content**: Every aspect of the experience is created by AI
-- 🎭 **Dynamic Storytelling**: New transmissions every 20 minutes
+- 🎭 **Dynamic Storytelling**: New transmissions every 15 minutes
 - 🗣️ **Voice Synthesis**: AI-generated character voices
 - 🎨 **AI Artwork**: All visuals created using AI
 - 🔄 **Real-time Updates**: Story evolves continuously
@@ -32,7 +32,9 @@ This project showcases the integration of multiple AI systems:
 
 ## Project Status
 
-Currently in active development. Follow us here:
+Currently in active development. Version 1.0.0 will be available at launch, with version 2.0.0 releasing shortly after, bringing enhanced features and real-time transmission capabilities.
+
+Follow us here:
 - 🌐 Website: [darkforestinteractive.com](https://darkforestinteractive.com)
 - 🤖 Starweaver: [@Starweaver_AI](https://twitter.com/Starweaver_AI)
 - 🎮 Dark Forest Interactive: [@DFI_AI](https://twitter.com/DFI_AI)
