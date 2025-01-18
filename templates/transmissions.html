@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
+<!-- Pre-launch Notice -->
+<div class="pre-launch-notice">
+    <div class="notice-content">
+        <div class="notice-header">> SYSTEM STATUS: STANDBY</div>
+        <div class="notice-text">
+            Starweaver's transmission system is currently in development mode. When v2.0 launches, this terminal will receive live transmissions every 15 minutes from the void between stars.
+        </div>
+        <div class="notice-status">> AWAITING ACTIVATION SIGNAL</div>
+    </div>
+</div>
+
 {% if transmissions %}
 <!-- Signal Initialization Display -->
 <div class="transmission-status">
@@ -38,6 +49,37 @@
 {% endif %}
 
 <style>
+.pre-launch-notice {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    border: 1px solid var(--accent-color);
+    background: rgba(255, 62, 62, 0.05);
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.notice-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.notice-header {
+    color: var(--accent-color);
+    font-size: 1.2em;
+    text-shadow: 0 0 5px var(--accent-color);
+}
+
+.notice-text {
+    color: var(--text-color);
+    line-height: 1.6;
+    padding: 0.5rem 0;
+}
+
+.notice-status {
+    color: var(--accent-color);
+    animation: blink 2s infinite;
+}
+
 .init-sequence {
     font-family: 'Share Tech Mono', monospace;
     color: var(--primary-color);
