@@ -33,12 +33,15 @@
         </header>
 
         {% if transmissions %}
-        <!-- Next Transmission Countdown -->
-        <div class="next-transmission">
-            <div class="countdown">
-                <span>NEXT TRANSMISSION IN</span>
-                <span class="time" id="countdown">{{ next_update }}</span>
+        <!-- Signal Initialization Display -->
+        <div class="transmission-status">
+            <div class="init-sequence">
+                > INITIALIZING QUANTUM ARRAY
+                > ALIGNING SUBSPACE ANTENNA
+                > AWAITING SIGNAL LOCK
+                <span class="blink">>_</span>
             </div>
+            <div class="status">STANDBY FOR INCOMING TRANSMISSIONS</div>
         </div>
 
         <!-- Most Recent Transmission -->
@@ -95,68 +98,43 @@
         </div>
         {% endif %}
 
+        <style>
+        .transmission-status {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid #2a6478;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            color: #00ff9d;
+            margin: 20px 0;
+            box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+        }
+
+        .init-sequence {
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .blink {
+            animation: blink 1s infinite;
+        }
+
+        .status {
+            color: #ff9d00;
+            text-align: center;
+            margin-top: 20px;
+            letter-spacing: 2px;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        </style>
+
+        <!-- Remove the countdown JavaScript and replace with this -->
         <script>
             // Audio state tracking
             let currentlyPlaying = null;
-            let checkInterval = null;
-
-            // Function to check for new transmissions
-            function checkForNewTransmissions() {
-                fetch('/check-new-transmission')
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Checking for new transmissions:', data);
-                        if (data.new_transmission) {
-                            console.log('New transmission detected, reloading...');
-                            location.reload();
-                        }
-                    })
-                    .catch(error => console.error('Error checking for new transmissions:', error));
-            }
-
-            // Countdown timer
-            function updateCountdown() {
-                let countdown = document.getElementById('countdown');
-                let timeString = countdown.textContent;
-                
-                if (timeString === "Transmissions not started") {
-                    // Check every 5 seconds even when not started
-                    checkInterval = setInterval(checkForNewTransmissions, 5000);
-                    return;
-                }
-                
-                let [minutes, seconds] = timeString.split(':').map(num => parseInt(num));
-                let totalSeconds = minutes * 60 + seconds;
-                
-                function formatTime(totalSeconds) {
-                    let minutes = Math.floor(totalSeconds / 60);
-                    let seconds = totalSeconds % 60;
-                    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-                }
-                
-                // Clear any existing interval
-                if (checkInterval) {
-                    clearInterval(checkInterval);
-                }
-                
-                // Start checking for new transmissions every 5 seconds
-                checkInterval = setInterval(checkForNewTransmissions, 5000);
-                
-                // Update countdown every second
-                let timer = setInterval(() => {
-                    if (totalSeconds > 0) {
-                        totalSeconds--;
-                        countdown.textContent = formatTime(totalSeconds);
-                    } else {
-                        // Reset countdown to 1 minute for testing
-                        totalSeconds = 60;
-                        countdown.textContent = formatTime(totalSeconds);
-                    }
-                }, 1000);
-            }
-
-            // Start the countdown when the page loads
-            document.addEventListener('DOMContentLoaded', updateCountdown);
 
             // Function to play transmission audio
             function playTransmission(transmissionId) {
@@ -194,13 +172,6 @@
                     currentlyPlaying = null;
                 };
             }
-
-            // Clean up intervals when leaving the page
-            window.addEventListener('beforeunload', () => {
-                if (checkInterval) {
-                    clearInterval(checkInterval);
-                }
-            });
         </script>
     </div>
 </body>
