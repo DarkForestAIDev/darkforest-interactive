@@ -335,10 +335,9 @@ def about():
 @rate_limit
 def transmissions_page():
     try:
-        # ALWAYS use prelaunch template for now
-        return render_template('transmissions_prelaunch.html', 
+        logger.info("Rendering pre-launch transmission page")
+        return render_template('transmissions.html',  # Use the single template 
                              transmissions=transmissions)
-                             
     except Exception as e:
         logger.error(f"Error rendering transmissions: {str(e)}")
         return f"Error: {str(e)}", 500
