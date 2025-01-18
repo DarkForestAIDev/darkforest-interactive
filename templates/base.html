@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dark Forest Interactive</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
@@ -36,18 +36,18 @@
                     <i class="fab fa-twitter"></i>
                 </a>
                 {% endif %}
-                <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
-                    <i class="fab fa-telegram"></i>
+                <a href="https://github.com/DarkForestAIDev/darkforest-interactive" class="social-link" target="_blank" rel="noopener noreferrer">
+                    <i class="fab fa-github"></i>
                 </a>
                 <a href="#" class="social-link" target="_blank" rel="noopener noreferrer">
                     <i class="fas fa-chart-line"></i>
                 </a>
             </div>
             <nav class="main-nav">
-                <a href="/">CHAPTER ONE</a>
-                <a href="/chapter-two">CHAPTER TWO</a>
-                <a href="/transmissions">LIVE TRANSMISSIONS</a>
-                <a href="/about">ABOUT</a>
+                <a href="/" {% if request.endpoint == 'chapter_one' %}class="active"{% endif %}>CHAPTER ONE</a>
+                <a href="/chapter-two" {% if request.endpoint == 'chapter_two' %}class="active"{% endif %}>CHAPTER TWO</a>
+                <a href="/transmissions" {% if request.endpoint == 'transmissions_page' %}class="active"{% endif %}>LIVE TRANSMISSIONS</a>
+                <a href="/about" {% if request.endpoint == 'about' %}class="active"{% endif %}>ABOUT</a>
             </nav>
         </header>
         <main>

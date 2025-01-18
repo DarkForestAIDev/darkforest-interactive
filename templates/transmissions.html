@@ -34,14 +34,14 @@
                 <div class="signal-bar" style="--strength: {{ transmissions[0].signal_strength }}%"></div>
                 <span class="signal-value">{{ transmissions[0].signal_strength }}%</span>
             </div>
-            <button class="play-audio" onclick="playTransmission('{{ transmissions[0].id }}')">
+            <button class="play-audio" onclick="playTransmission('{{ transmissions[0].id.split('-')[1] }}')">
                 <i class="fas fa-play"></i>
             </button>
         </div>
         <div class="message">{{ transmissions[0].message }}</div>
         <div class="timestamp">{{ transmissions[0].timestamp }}</div>
-        <audio id="audio-{{ transmissions[0].id }}" preload="auto">
-            <source src="{{ url_for('get_transmission_audio', transmission_id=transmissions[0].id) }}" type="audio/mpeg">
+        <audio id="audio-{{ transmissions[0].id.split('-')[1] }}" preload="auto">
+            <source src="{{ url_for('get_transmission_audio', transmission_id=transmissions[0].id.split('-')[1]) }}" type="audio/mpeg">
             Your browser does not support the audio element.
         </audio>
     </div>
@@ -155,25 +155,43 @@
 
 <script>
 function playTransmission(transmissionId) {
+    console.log('Playing transmission:', transmissionId);
     const audio = document.getElementById(`audio-${transmissionId}`);
     const button = document.querySelector(`button[onclick="playTransmission('${transmissionId}')"]`);
     
+    if (!audio) {
+        console.error('Audio element not found for ID:', transmissionId);
+        return;
+    }
+    
     if (audio.paused) {
+        console.log('Starting playback...');
         audio.play().then(() => {
             button.innerHTML = '<i class="fas fa-pause"></i>';
             button.classList.add('playing');
+            console.log('Playback started successfully');
         }).catch((error) => {
             console.error('Error playing audio:', error);
+            alert('Error playing audio. Please try again.');
         });
     } else {
+        console.log('Pausing playback...');
         audio.pause();
         button.innerHTML = '<i class="fas fa-play"></i>';
         button.classList.remove('playing');
     }
     
     audio.onended = function() {
+        console.log('Playback ended');
         button.innerHTML = '<i class="fas fa-play"></i>';
         button.classList.remove('playing');
+    };
+    
+    audio.onerror = function(e) {
+        console.error('Audio error:', e);
+        button.innerHTML = '<i class="fas fa-play"></i>';
+        button.classList.remove('playing');
+        alert('Error loading audio. Please try again.');
     };
 }
 </script>

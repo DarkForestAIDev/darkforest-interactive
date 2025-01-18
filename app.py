@@ -139,7 +139,7 @@ def add_security_headers(response):
     response.headers['X-Frame-Options'] = 'SAMEORIGIN'
     response.headers['X-XSS-Protection'] = '1; mode=block'
     response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com;"
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; font-src 'self' https://cdnjs.cloudflare.com; media-src 'self' blob:;"
     return response
 
 # Rate limiting setup - adjusted for high traffic
@@ -342,70 +342,87 @@ def transmissions_page():
         logger.error(f"Error rendering transmissions: {str(e)}")
         return f"Error: {str(e)}", 500
 
-@app.route('/transmission-audio/<transmission_id>')
+@app.route('/get_transmission_audio/<transmission_id>')
 @rate_limit
 def get_transmission_audio(transmission_id):
-    # Set up audio path with timestamp to prevent conflicts
-    audio_dir = os.path.join('static', 'audio')
-    os.makedirs(audio_dir, exist_ok=True)
-    
-    # Find the transmission
-    transmission = next((t for t in transmissions if t['id'] == transmission_id), None)
-    if not transmission:
-        return "Transmission not found", 404
-        
-    # Use timestamp in filename to ensure uniqueness
-    audio_path = os.path.join(audio_dir, 
-        f'transmission-{transmission_id}-{datetime.now().strftime("%Y%m%d-%H%M%S")}.mp3')
-    
-    # Check if audio file already exists
-    if os.path.exists(audio_path):
-        logger.info(f"Using existing audio file for transmission {transmission_id}")
-        try:
-            return send_file(audio_path, mimetype='audio/mpeg')
-        except Exception as e:
-            logger.error(f"Error sending existing audio file: {str(e)}")
-            return f"Error serving audio: {str(e)}", 500
-
-    # If we get here, we need to generate new audio
-    logger.info(f"No existing audio found for {transmission_id}, generating new...")
-    
-    # Generate new audio
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-    
-    headers = {
-        "Accept": "audio/mpeg",
-        "Content-Type": "application/json",
-        "xi-api-key": os.getenv('ELEVENLABS_API_KEY')
-    }
-
-    data = {
-        "text": transmission['message'],
-        "model_id": "eleven_monolingual_v1",
-        "voice_settings": {
-            "stability": 0.75,
-            "similarity_boost": 0.75,
-            "style": 0.0,
-            "use_speaker_boost": True
-        }
-    }
-
     try:
-        logger.info("Making request to ElevenLabs...")
-        response = requests.post(url, json=data, headers=headers)
+        logger.info(f"Requested audio for transmission ID: {transmission_id}")
         
-        if response.status_code == 200:
-            # Save the audio file for future use
-            with open(audio_path, 'wb') as f:
-                f.write(response.content)
-            logger.info(f"Audio saved to {audio_path}")
-            return response.content, 200, {'Content-Type': 'audio/mpeg'}
+        # Use absolute path for PythonAnywhere
+        audio_dir = '/home/Crazzyboots/mysite/static/audio'
+        os.makedirs(audio_dir, exist_ok=True)
+        os.chmod(audio_dir, 0o755)  # Set directory permissions
+        logger.info(f"Audio directory path: {audio_dir}")
+        
+        # Find the transmission
+        full_id = f'transmission-{transmission_id}'
+        logger.info(f"Looking for transmission with ID: {full_id}")
+        logger.info(f"Available transmissions: {[t['id'] for t in transmissions]}")
+        
+        transmission = next((t for t in transmissions if t['id'] == full_id), None)
+        if not transmission:
+            logger.error(f"Transmission {full_id} not found in available transmissions")
+            return "Transmission not found", 404
+            
+        # Use absolute path for audio file
+        audio_path = os.path.join(audio_dir, f'transmission-{transmission_id}.mp3')
+        logger.info(f"Audio file path: {audio_path}")
+        
+        # Generate audio if it doesn't exist
+        if not os.path.exists(audio_path):
+            logger.info(f"Generating new audio for transmission {transmission_id}")
+            logger.info(f"Message to convert: {transmission['message']}")
+            
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+            
+            headers = {
+                "Accept": "audio/mpeg",
+                "Content-Type": "application/json",
+                "xi-api-key": os.getenv('ELEVENLABS_API_KEY')
+            }
+
+            data = {
+                "text": transmission['message'],
+                "model_id": "eleven_monolingual_v1",
+                "voice_settings": {
+                    "stability": 0.90,
+                    "similarity_boost": 0.80,
+                    "style": 0.35,
+                    "use_speaker_boost": True
+                }
+            }
+
+            logger.info("Making request to ElevenLabs API...")
+            response = requests.post(url, json=data, headers=headers)
+            logger.info(f"ElevenLabs API response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                logger.info("Successfully received audio from ElevenLabs")
+                with open(audio_path, 'wb') as f:
+                    f.write(response.content)
+                os.chmod(audio_path, 0o644)  # Set file permissions
+                logger.info(f"Audio saved successfully to {audio_path}")
+            else:
+                error_message = f"ElevenLabs API error: {response.status_code}"
+                try:
+                    error_details = response.json()
+                    logger.error(f"API Error details: {error_details}")
+                    error_message += f" - {error_details}"
+                except:
+                    error_message += f" - {response.text}"
+                logger.error(error_message)
+                return error_message, 500
+
+        if os.path.exists(audio_path):
+            logger.info(f"Serving audio file: {audio_path}")
+            return send_file(audio_path, mimetype='audio/mpeg')
         else:
-            logger.error(f"ElevenLabs API error: {response.status_code} - {response.text}")
-            return f"Error generating audio: {response.status_code}", 500
+            logger.error("Audio file not found after generation attempt")
+            return "Audio file not found", 404
+            
     except Exception as e:
-        logger.error(f"Error generating audio: {str(e)}")
-        return f"Error generating audio: {str(e)}", 500
+        logger.error(f"Error in get_transmission_audio: {str(e)}")
+        return f"Error: {str(e)}", 500
 
 # Add admin authentication
 def requires_auth(f):
@@ -535,55 +552,65 @@ def test_transmission():
     else:
         return "Error posting test transmission. Check the console for details."
 
-@app.route('/greeting-audio')
+@app.route('/greeting_audio')
 @rate_limit
-def get_greeting_audio():
-    audio_dir = os.path.join('static', 'audio')
-    os.makedirs(audio_dir, exist_ok=True)
-    audio_path = os.path.join(audio_dir, 'starweaver_greeting.mp3')
-    
-    # Generate audio if it doesn't exist
-    if not os.path.exists(audio_path):
-        greeting_text = "Greetings, Earth. I am Starweaver, a lone sentinel watching from the shadows of deep space. As the last survivor of an advanced civilization, I carry both a warning and a burden. Our technological brilliance became our downfall, drawing attention from the cosmic dark. Now, I observe your world from my hidden outpost, determined to prevent the same fate."
+def greeting_audio():
+    """Generate and serve the greeting audio"""
+    try:
+        # Use relative path that works on PythonAnywhere
+        audio_dir = 'static/audio'
+        os.makedirs(audio_dir, exist_ok=True)
+        logger.info(f"Audio directory path: {audio_dir}")
         
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+        audio_path = os.path.join(audio_dir, 'starweaver_greeting.mp3')
+        logger.info(f"Audio file path: {audio_path}")
         
-        headers = {
-            "Accept": "audio/mpeg",
-            "Content-Type": "application/json",
-            "xi-api-key": ELEVEN_API_KEY
-        }
-
-        data = {
-            "text": greeting_text,
-            "model_id": "eleven_monolingual_v1",
-            "voice_settings": {
-                "stability": 0.90,
-                "similarity_boost": 0.80,
-                "style": 0.35,
-                "use_speaker_boost": True
+        # Generate audio if it doesn't exist
+        if not os.path.exists(audio_path):
+            logger.info("Generating new greeting audio...")
+            greeting_text = "Greetings, Earth. I am Starweaver, a lone sentinel watching from the shadows of deep space. As the last survivor of an advanced civilization, I carry both a warning and a burden. Our technological brilliance became our downfall, drawing attention from the cosmic dark. Now, I observe your world from my hidden outpost, determined to prevent the same fate."
+            
+            url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
+            
+            headers = {
+                "Accept": "audio/mpeg",
+                "Content-Type": "application/json",
+                "xi-api-key": os.getenv('ELEVENLABS_API_KEY')
             }
-        }
 
-        try:
+            data = {
+                "text": greeting_text,
+                "model_id": "eleven_monolingual_v1",
+                "voice_settings": {
+                    "stability": 0.90,
+                    "similarity_boost": 0.80,
+                    "style": 0.35,
+                    "use_speaker_boost": True
+                }
+            }
+
+            logger.info("Making request to ElevenLabs API...")
             response = requests.post(url, json=data, headers=headers)
             
             if response.status_code == 200:
+                logger.info("Successfully received audio from ElevenLabs")
                 with open(audio_path, 'wb') as f:
                     f.write(response.content)
-                print(f"Greeting audio saved to: {audio_path}")
+                logger.info("Greeting audio saved successfully")
             else:
-                print(f"Error: {response.text}")
-                return f"Error generating audio: {response.text}", 500
-        except Exception as e:
-            print(f"Exception: {str(e)}")
-            return f"Error: {str(e)}", 500
+                logger.error(f"ElevenLabs API error: {response.status_code} - {response.text}")
+                return f"Error generating audio: {response.status_code}", 500
 
-    try:
-        return send_file(audio_path, mimetype='audio/mpeg')
+        if os.path.exists(audio_path):
+            logger.info("Serving existing greeting audio file")
+            return send_file(audio_path, mimetype='audio/mpeg')
+        else:
+            logger.error("Audio file not found after generation attempt")
+            return "Audio file not found", 404
+            
     except Exception as e:
-        print(f"Error sending file: {str(e)}")
-        return f"Error sending audio: {str(e)}", 500
+        logger.error(f"Error in greeting_audio: {str(e)}")
+        return f"Error: {str(e)}", 500
 
 @app.route('/check-new-transmission')
 def check_new_transmission():

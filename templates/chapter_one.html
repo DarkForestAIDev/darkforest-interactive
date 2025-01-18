@@ -1,118 +1,104 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chapter One - Dark Forest Interactive</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <header>
-            <div class="header-container">
-                <div class="logo-container">
-                    <img src="{{ url_for('static', filename='images/Logo RemoveBG.png') }}" alt="Dark Forest Interactive Logo" class="logo">
-                </div>
-                <h1>DARK FOREST INTERACTIVE</h1>
-                <p class="subtitle">OBSERVER: STARWEAVER</p>
-            </div>
-            <div class="social-links">
-                <a href="{{ config['STARWEAVER_TWITTER_URL'] }}" class="social-link" target="_blank" rel="noopener noreferrer">
-                    <i class="fab fa-twitter"></i>
-                </a>
-                <a href="https://github.com/DarkForestAIDev" class="social-link" target="_blank" rel="noopener noreferrer">
-                    <i class="fab fa-github"></i>
-                </a>
-            </div>
-            <nav class="main-nav">
-                <a href="/chapter-one" class="active">CHAPTER ONE</a>
-                <a href="/chapter-two">CHAPTER TWO</a>
-                <a href="/transmissions">LIVE TRANSMISSIONS</a>
-                <a href="/about">ABOUT</a>
-            </nav>
-        </header>
+{% extends "base.html" %}
 
-        <div class="intro-section">
-            <div class="entity-info">
-                <h2>[SIGNAL INTERCEPTED: FIRST CONTACT]</h2>
-                <div class="greeting-container">
-                    <p>Greetings, Earth. I am Starweaver, a lone sentinel watching from the shadows of deep space. As the last survivor of an advanced civilization, I carry both a warning and a burden. Our technological brilliance became our downfall, drawing attention from the cosmic dark. Now, I observe your world from my hidden outpost, determined to prevent the same fate.</p>
-                    <button class="play-audio" onclick="playGreeting()">
-                        <i class="fas fa-play"></i>
-                    </button>
-                </div>
-                <audio id="greeting-audio" style="display: none;">
-                    <source src="{{ url_for('get_greeting_audio') }}" type="audio/mpeg">
-                </audio>
-                
-                <div class="stats">
-                    <div class="stat-item">
-                        <span class="stat-label">SIGNAL STATUS</span>
-                        <span class="stat-value">ACTIVE</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">ORIGIN</span>
-                        <span class="stat-value">DEEP SPACE</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-label">ENCRYPTION</span>
-                        <span class="stat-value">QUANTUM</span>
-                    </div>
-                </div>
+{% block content %}
+<div class="intro-section">
+    <div class="entity-info">
+        <h2>[SIGNAL INTERCEPTED: FIRST CONTACT]</h2>
+        <div class="greeting-container">
+            <p>Greetings, Earth. I am Starweaver, a lone sentinel watching from the shadows of deep space. As the last survivor of an advanced civilization, I carry both a warning and a burden. Our technological brilliance became our downfall, drawing attention from the cosmic dark. Now, I observe your world from my hidden outpost, determined to prevent the same fate.</p>
+            <button class="play-audio" onclick="playGreeting()">
+                <i class="fas fa-play"></i>
+            </button>
+        </div>
+        <audio id="greeting-audio" preload="auto">
+            <source src="{{ url_for('greeting_audio') }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+        
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-label">SIGNAL STATUS</span>
+                <span class="stat-value">ACTIVE</span>
             </div>
-
-            <div class="theory-section">
-                <h2>THE DARK FOREST THEORY</h2>
-                <div class="theory-content">
-                    <ul class="axioms">
-                        <li>
-                            <span class="axiom-number">1</span>
-                            <span class="axiom-text">All life desires to stay alive</span>
-                        </li>
-                        <li>
-                            <span class="axiom-number">2</span>
-                            <span class="axiom-text">Resources are finite in the cosmos</span>
-                        </li>
-                        <li>
-                            <span class="axiom-number">3</span>
-                            <span class="axiom-text">The intentions of other civilizations are unknowable</span>
-                        </li>
-                    </ul>
-                    <div class="conclusion">
-                        <p>The universe is a dark forest where every civilization is a hunter stalking through the trees. The safest path is to remain hidden, for in this cosmic game of hide and seek, discovery means extinction.</p>
-                        <p class="warning">Your signals are reaching deeper into space with each passing day. Remember: in the dark forest, the sound of a twig breaking can be fatal.</p>
-                    </div>
-                </div>
+            <div class="stat-item">
+                <span class="stat-label">ORIGIN</span>
+                <span class="stat-value">DEEP SPACE</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">ENCRYPTION</span>
+                <span class="stat-value">QUANTUM</span>
             </div>
         </div>
     </div>
-    <script>
-        function playGreeting() {
-            const audio = document.getElementById('greeting-audio');
-            const button = document.querySelector('.play-audio');
-            
-            if (audio.paused) {
-                audio.play().catch(function(error) {
-                    console.log("Audio playback error:", error);
-                });
-                button.classList.add('playing');
-                button.querySelector('i').classList.add('fa-pause');
-                button.querySelector('i').classList.remove('fa-play');
-            } else {
-                audio.pause();
-                audio.currentTime = 0;
-                button.classList.remove('playing');
-                button.querySelector('i').classList.add('fa-play');
-                button.querySelector('i').classList.remove('fa-pause');
-            }
 
-            audio.onended = function() {
-                button.classList.remove('playing');
-                button.querySelector('i').classList.add('fa-play');
-                button.querySelector('i').classList.remove('fa-pause');
-            };
-        }
-    </script>
-</body>
-</html> 
+    <div class="theory-section">
+        <h2>THE DARK FOREST THEORY</h2>
+        <div class="theory-content">
+            <ul class="axioms">
+                <li>
+                    <span class="axiom-number">1</span>
+                    <span class="axiom-text">All life desires to stay alive</span>
+                </li>
+                <li>
+                    <span class="axiom-number">2</span>
+                    <span class="axiom-text">Resources are finite in the cosmos</span>
+                </li>
+                <li>
+                    <span class="axiom-number">3</span>
+                    <span class="axiom-text">The intentions of other civilizations are unknowable</span>
+                </li>
+            </ul>
+            <div class="conclusion">
+                <p>The universe is a dark forest where every civilization is a hunter stalking through the trees. The safest path is to remain hidden, for in this cosmic game of hide and seek, discovery means extinction.</p>
+                <p class="warning">Your signals are reaching deeper into space with each passing day. Remember: in the dark forest, the sound of a twig breaking can be fatal.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function playGreeting() {
+    const audio = document.getElementById('greeting-audio');
+    const button = document.querySelector('.play-audio');
+    
+    if (!audio) {
+        console.error('Audio element not found');
+        return;
+    }
+    
+    if (audio.paused) {
+        audio.play().then(() => {
+            button.innerHTML = '<i class="fas fa-pause"></i>';
+            button.classList.add('playing');
+        }).catch((error) => {
+            console.error('Error playing audio:', error);
+            alert('Error playing audio. Please try again.');
+        });
+    } else {
+        audio.pause();
+        button.innerHTML = '<i class="fas fa-play"></i>';
+        button.classList.remove('playing');
+    }
+    
+    audio.onended = function() {
+        button.innerHTML = '<i class="fas fa-play"></i>';
+        button.classList.remove('playing');
+    };
+    
+    audio.onerror = function(e) {
+        console.error('Audio error:', e);
+        button.innerHTML = '<i class="fas fa-play"></i>';
+        button.classList.remove('playing');
+        alert('Error loading audio. Please try again.');
+    };
+}
+
+// Preload the audio when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const audio = document.getElementById('greeting-audio');
+    if (audio) {
+        audio.load();
+    }
+});
+</script>
+{% endblock %} 
