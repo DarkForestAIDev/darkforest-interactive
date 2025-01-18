@@ -1,64 +1,138 @@
-<!DOCTYPE html>
-<html lang="en">
-<!-- Keep the same head section -->
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live Transmissions - Dark Forest Interactive</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body>
-    <div class="container">
-        <!-- Keep the same header section -->
-        <header>
-            <!-- ... existing header content ... -->
-        </header>
+{% extends "base.html" %}
 
-        {% if transmissions %}
-        <!-- Signal Initialization Display -->
-        <div class="transmission-status">
-            <div class="init-sequence">
-                > INITIALIZING QUANTUM ARRAY
-                > ALIGNING SUBSPACE ANTENNA
-                > AWAITING SIGNAL LOCK
-                <span class="blink">>_</span>
-            </div>
-            <div class="status">STANDBY FOR INCOMING TRANSMISSIONS</div>
-        </div>
-
-        <!-- Show First Transmission -->
-        <div class="latest-transmission">
-            <h2>FIRST CONTACT</h2>
-            <div class="transmission latest">
-                <div class="transmission-header">
-                    <span class="status latest">{{ transmissions[0].status }}</span>
-                    <div class="signal-strength">
-                        <span class="signal-label">SIGNAL</span>
-                        <div class="signal-bar" style="--strength: {{ transmissions[0].signal_strength }}%"></div>
-                        <span class="signal-value">{{ transmissions[0].signal_strength }}%</span>
-                    </div>
-                    <button class="play-audio" onclick="playTransmission('{{ transmissions[0].id }}')">
-                        <i class="fas fa-play"></i>
-                    </button>
-                </div>
-                <div class="message">{{ transmissions[0].message }}</div>
-                <div class="timestamp">{{ transmissions[0].timestamp }}</div>
-                <audio id="audio-{{ transmissions[0].id }}" style="display: none;">
-                    <source src="{{ url_for('get_transmission_audio', transmission_id=transmissions[0].id) }}" type="audio/mpeg">
-                </audio>
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Keep the same styles and audio script -->
-        <style>
-            /* ... existing styles ... */
-        </style>
-
-        <script>
-            /* ... existing audio script ... */
-        </script>
+{% block content %}
+{% if transmissions %}
+<!-- Signal Initialization Display -->
+<div class="transmission-status">
+    <div class="init-sequence">
+        <div class="init-line">> INITIALIZING QUANTUM ARRAY</div>
+        <div class="init-line">> ALIGNING SUBSPACE ANTENNA</div>
+        <div class="init-line">> AWAITING SIGNAL LOCK</div>
+        <div class="init-line blink">>_</div>
     </div>
-</body>
-</html> 
+    <div class="status">STANDBY FOR INCOMING TRANSMISSIONS</div>
+</div>
+
+<!-- Show First Transmission -->
+<div class="latest-transmission">
+    <div class="transmission latest">
+        <div class="transmission-header">
+            <span class="status latest">{{ transmissions[0].status }}</span>
+            <div class="signal-strength">
+                <span class="signal-label">SIGNAL</span>
+                <div class="signal-bar" style="--strength: {{ transmissions[0].signal_strength }}%"></div>
+                <span class="signal-value">{{ transmissions[0].signal_strength }}%</span>
+            </div>
+            <button class="play-audio" onclick="playTransmission('{{ transmissions[0].id }}')">
+                <i class="fas fa-play"></i>
+            </button>
+        </div>
+        <div class="message">{{ transmissions[0].message }}</div>
+        <div class="timestamp">{{ transmissions[0].timestamp }}</div>
+        <audio id="audio-{{ transmissions[0].id }}" preload="auto">
+            <source src="{{ url_for('get_transmission_audio', transmission_id=transmissions[0].id) }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+</div>
+{% endif %}
+
+<style>
+.init-sequence {
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--primary-color);
+    margin-bottom: 2rem;
+    padding: 1rem;
+    border: 1px solid var(--primary-color);
+    background: rgba(0, 255, 157, 0.02);
+    position: relative;
+}
+
+.init-line {
+    margin: 0.5rem 0;
+    opacity: 0;
+    animation: typeIn 1s forwards;
+}
+
+.init-line:nth-child(1) { animation-delay: 0.5s; }
+.init-line:nth-child(2) { animation-delay: 1.5s; }
+.init-line:nth-child(3) { animation-delay: 2.5s; }
+.init-line:nth-child(4) { animation-delay: 3.5s; }
+
+@keyframes typeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.blink {
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.signal-bar {
+    position: relative;
+    width: 100px;
+    height: 10px;
+    background: rgba(0, 255, 157, 0.2);
+    margin: 0 10px;
+    overflow: hidden;
+}
+
+.signal-bar::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: var(--strength);
+    background: var(--primary-color);
+    box-shadow: 0 0 10px var(--primary-color);
+}
+
+.signal-strength {
+    display: flex;
+    align-items: center;
+    margin: 0 15px;
+}
+
+.signal-label, .signal-value {
+    color: var(--primary-color);
+    font-family: 'Share Tech Mono', monospace;
+}
+</style>
+
+<script>
+function playTransmission(transmissionId) {
+    const audio = document.getElementById(`audio-${transmissionId}`);
+    const button = document.querySelector(`button[onclick="playTransmission('${transmissionId}')"]`);
+    
+    if (audio.paused) {
+        audio.play().then(() => {
+            button.innerHTML = '<i class="fas fa-pause"></i>';
+            button.classList.add('playing');
+        }).catch((error) => {
+            console.error('Error playing audio:', error);
+        });
+    } else {
+        audio.pause();
+        button.innerHTML = '<i class="fas fa-play"></i>';
+        button.classList.remove('playing');
+    }
+    
+    audio.onended = function() {
+        button.innerHTML = '<i class="fas fa-play"></i>';
+        button.classList.remove('playing');
+    };
+}
+</script>
+{% endblock %} 
