@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Keep the same head section -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Transmissions - Dark Forest Interactive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Keep the same header section -->
+        <header>
+            <!-- ... existing header content ... -->
+        </header>
+
+        {% if transmissions %}
+        <!-- Signal Initialization Display -->
+        <div class="transmission-status">
+            <div class="init-sequence">
+                > INITIALIZING QUANTUM ARRAY
+                > ALIGNING SUBSPACE ANTENNA
+                > AWAITING SIGNAL LOCK
+                <span class="blink">>_</span>
+            </div>
+            <div class="status">STANDBY FOR INCOMING TRANSMISSIONS</div>
+        </div>
+
+        <!-- Show First Transmission -->
+        <div class="latest-transmission">
+            <h2>FIRST CONTACT</h2>
+            <div class="transmission latest">
+                <div class="transmission-header">
+                    <span class="status latest">{{ transmissions[0].status }}</span>
+                    <div class="signal-strength">
+                        <span class="signal-label">SIGNAL</span>
+                        <div class="signal-bar" style="--strength: {{ transmissions[0].signal_strength }}%"></div>
+                        <span class="signal-value">{{ transmissions[0].signal_strength }}%</span>
+                    </div>
+                    <button class="play-audio" onclick="playTransmission('{{ transmissions[0].id }}')">
+                        <i class="fas fa-play"></i>
+                    </button>
+                </div>
+                <div class="message">{{ transmissions[0].message }}</div>
+                <div class="timestamp">{{ transmissions[0].timestamp }}</div>
+                <audio id="audio-{{ transmissions[0].id }}" style="display: none;">
+                    <source src="{{ url_for('get_transmission_audio', transmission_id=transmissions[0].id) }}" type="audio/mpeg">
+                </audio>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Keep the same styles and audio script -->
+        <style>
+            /* ... existing styles ... */
+        </style>
+
+        <script>
+            /* ... existing audio script ... */
+        </script>
+    </div>
+</body>
+</html> 

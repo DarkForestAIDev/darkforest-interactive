@@ -335,11 +335,22 @@ def about():
 @rate_limit
 def transmissions_page():
     try:
-        # Pre-launch state - always show initialization until we explicitly start
-        return render_template('transmissions.html', 
-                             transmissions=transmissions,
-                             show_initialization=True,  # Always show initialization
-                             next_update=None)  # No countdown
+        start_time = load_start_time()
+        
+        if start_time is None:  # Pre-launch state
+            return render_template('transmissions_prelaunch.html', 
+                                 transmissions=transmissions)
+        else:  # Live state
+            # Calculate countdown for 15-min intervals
+            time_since_start = datetime.now() - start_time
+            minutes_since_start = time_since_start.total_seconds() / 60
+            intervals_passed = int(minutes_since_start / 15)
+            next_interval = (intervals_passed + 1) * 15
+            minutes_remaining = next_interval - minutes_since_start
+            
+            return render_template('transmissions_live.html', 
+                                 transmissions=transmissions,
+                                 next_update=format_time(minutes_remaining))
                              
     except Exception as e:
         logger.error(f"Error rendering transmissions: {str(e)}")
