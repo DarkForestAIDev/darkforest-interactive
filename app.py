@@ -335,21 +335,11 @@ def about():
 @rate_limit
 def transmissions_page():
     try:
-        start_time = load_start_time()
-        
-        # Safety check for transmissions file
-        if not os.path.exists('static/transmissions.json'):
-            logger.error("Transmissions file missing - reinitializing")
-            transmissions = load_initial_transmission()
-            
-        # Safety check for pre-launch state
-        if start_time is None:  # We haven't started yet - show V1
-            logger.info("Pre-launch state: showing initialization display")
-            return render_template('transmissions.html', 
-                                 transmissions=transmissions,
-                                 show_initialization=True,  # Show initialization display
-                                 next_update=None,  # No countdown yet
-                                 is_prelaunch=True)  # Extra flag for template
+        # Pre-launch state - always show initialization until we explicitly start
+        return render_template('transmissions.html', 
+                             transmissions=transmissions,
+                             show_initialization=True,  # Always show initialization
+                             next_update=None)  # No countdown
                              
     except Exception as e:
         logger.error(f"Error rendering transmissions: {str(e)}")
