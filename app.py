@@ -19,9 +19,14 @@ logger = logging.getLogger(__name__)
 TESTING_MODE = True  # Make sure this is True
 TRANSMISSION_INTERVAL = 15  # Changed from 20 to 15 minutes
 
+# Add absolute path configuration
+PYTHONANYWHERE_USERNAME = 'Crazzyboots'
+BASE_DIR = f'/home/{PYTHONANYWHERE_USERNAME}/mysite'
+AUDIO_DIR = f'{BASE_DIR}/static/audio'
+
 def save_start_time():
     try:
-        with open('static/start_time.txt', 'w') as f:
+        with open(os.path.join(BASE_DIR, 'static/start_time.txt'), 'w') as f:
             current_time = datetime.now()
             f.write(current_time.strftime('%Y-%m-%d %H:%M:%S'))
             logger.info(f"Saved start time: {current_time}")
@@ -32,7 +37,7 @@ def save_start_time():
 
 def load_start_time():
     try:
-        with open('static/start_time.txt', 'r') as f:
+        with open(os.path.join(BASE_DIR, 'static/start_time.txt'), 'r') as f:
             return datetime.strptime(f.read().strip(), '%Y-%m-%d %H:%M:%S')
     except:
         return None
@@ -58,8 +63,8 @@ try:
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
     
     # Create static directory if it doesn't exist
-    os.makedirs('static', exist_ok=True)
-    os.makedirs('static/audio', exist_ok=True)
+    os.makedirs(BASE_DIR, exist_ok=True)
+    os.makedirs(AUDIO_DIR, exist_ok=True)
     
     # Initialize basic variables
     transmissions = []
@@ -222,7 +227,7 @@ def load_initial_transmission():
     """Load or create the first transmission"""
     try:
         # Try to load existing transmissions
-        with open('static/transmissions.json', 'r') as f:
+        with open(os.path.join(BASE_DIR, 'static/transmissions.json'), 'r') as f:
             existing = json.load(f)
             if existing:
                 logger.info(f"Loaded {len(existing)} existing transmissions")
@@ -242,8 +247,8 @@ def load_initial_transmission():
     }
     
     # Save initial transmission
-    os.makedirs('static', exist_ok=True)
-    with open('static/transmissions.json', 'w') as f:
+    os.makedirs(BASE_DIR, exist_ok=True)
+    with open(os.path.join(BASE_DIR, 'static/transmissions.json'), 'w') as f:
         json.dump([initial_transmission], f, indent=2)
     logger.info("Created and saved initial transmission")
     
@@ -263,7 +268,7 @@ def save_transmissions(transmissions_list):
                 return False
         
         # If all numbers are correct, save
-        with open('static/transmissions.json', 'w') as f:
+        with open(os.path.join(BASE_DIR, 'static/transmissions.json'), 'w') as f:
             json.dump(transmissions_list, f, indent=2)
         return True
     except Exception as e:
@@ -349,7 +354,7 @@ def get_transmission_audio(transmission_id):
         logger.info(f"Requested audio for transmission ID: {transmission_id}")
         
         # Use absolute path for PythonAnywhere
-        audio_dir = '/home/Crazzyboots/mysite/static/audio'
+        audio_dir = AUDIO_DIR
         os.makedirs(audio_dir, exist_ok=True)
         os.chmod(audio_dir, 0o755)  # Set directory permissions
         logger.info(f"Audio directory path: {audio_dir}")
@@ -516,7 +521,7 @@ def save_and_post_transmission(transmission):
         transmissions.insert(0, transmission)
         
         # Save to file
-        with open('static/transmissions.json', 'w') as f:
+        with open(os.path.join(BASE_DIR, 'static/transmissions.json'), 'w') as f:
             json.dump(transmissions, f, indent=2)
         
         # Post to Twitter using the TwitterBot
@@ -557,7 +562,7 @@ def test_transmission():
 def greeting_audio():
     """Generate and serve the greeting audio"""
     try:
-        # Use relative path that works on PythonAnywhere
+        # Use absolute path for audio directory
         audio_dir = 'static/audio'
         os.makedirs(audio_dir, exist_ok=True)
         logger.info(f"Audio directory path: {audio_dir}")
@@ -565,17 +570,21 @@ def greeting_audio():
         audio_path = os.path.join(audio_dir, 'starweaver_greeting.mp3')
         logger.info(f"Audio file path: {audio_path}")
         
-        # Generate audio if it doesn't exist
+        # Always generate new audio if it doesn't exist
         if not os.path.exists(audio_path):
             logger.info("Generating new greeting audio...")
             greeting_text = "Greetings, Earth. I am Starweaver, a lone sentinel watching from the shadows of deep space. As the last survivor of an advanced civilization, I carry both a warning and a burden. Our technological brilliance became our downfall, drawing attention from the cosmic dark. Now, I observe your world from my hidden outpost, determined to prevent the same fate."
             
             url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
             
+            # Log API key length for debugging
+            api_key = os.getenv('ELEVENLABS_API_KEY')
+            logger.info(f"ElevenLabs API key length: {len(api_key) if api_key else 'No key found'}")
+            
             headers = {
                 "Accept": "audio/mpeg",
                 "Content-Type": "application/json",
-                "xi-api-key": os.getenv('ELEVENLABS_API_KEY')
+                "xi-api-key": api_key
             }
 
             data = {
@@ -591,18 +600,26 @@ def greeting_audio():
 
             logger.info("Making request to ElevenLabs API...")
             response = requests.post(url, json=data, headers=headers)
+            logger.info(f"ElevenLabs API response status: {response.status_code}")
             
             if response.status_code == 200:
                 logger.info("Successfully received audio from ElevenLabs")
                 with open(audio_path, 'wb') as f:
                     f.write(response.content)
-                logger.info("Greeting audio saved successfully")
+                logger.info(f"Greeting audio saved to {audio_path}")
             else:
-                logger.error(f"ElevenLabs API error: {response.status_code} - {response.text}")
-                return f"Error generating audio: {response.status_code}", 500
+                error_message = f"ElevenLabs API error: {response.status_code}"
+                try:
+                    error_details = response.json()
+                    logger.error(f"API Error details: {error_details}")
+                    error_message += f" - {error_details}"
+                except:
+                    error_message += f" - {response.text}"
+                logger.error(error_message)
+                return error_message, 500
 
         if os.path.exists(audio_path):
-            logger.info("Serving existing greeting audio file")
+            logger.info(f"Serving audio file from {audio_path}")
             return send_file(audio_path, mimetype='audio/mpeg')
         else:
             logger.error("Audio file not found after generation attempt")
@@ -656,7 +673,7 @@ def generate_transmission_audio(transmission_id, message):
             logger.info(f"Generating audio for transmission {transmission_id}, attempt {retry_count + 1}")
             
             # Check if audio already exists
-            audio_path = f'static/audio/transmission-{transmission_id}.mp3'
+            audio_path = os.path.join(AUDIO_DIR, f'transmission-{transmission_id}.mp3')
             if os.path.exists(audio_path):
                 logger.info(f"Audio already exists for transmission {transmission_id}")
                 return True
@@ -706,7 +723,7 @@ def make_elevenlabs_request(message):
 def load_transmissions():
     """Load transmissions from file"""
     try:
-        with open('static/transmissions.json', 'r') as f:
+        with open(os.path.join(BASE_DIR, 'static/transmissions.json'), 'r') as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return []

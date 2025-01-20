@@ -32,10 +32,10 @@ This project showcases the integration of multiple AI systems:
 
 ## Project Status
 
-Currently in active development. Version 1.0.0 will be available at launch, with version 2.0.0 releasing shortly after, bringing enhanced features and real-time transmission capabilities.
+🎉 Version 1.0.0 is now live! Experience the story at our official website.
 
 Follow us here:
-- 🌐 Website: [darkforestinteractive.com](https://darkforestinteractive.com)
+- 🌐 Website: [www.dfi-ai.xyz](https://www.dfi-ai.xyz)
 - 🤖 Starweaver: [@Starweaver_AI](https://twitter.com/Starweaver_AI)
 - 🎮 Dark Forest Interactive: [@DFI_AI](https://twitter.com/DFI_AI)
 
